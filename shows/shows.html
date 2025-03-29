@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shows</title>
+  <style>
+    /* Global resets, fonts & background */
+    body {
+      margin: 0;
+      padding: 60px 20px 0 20px;
+      font-family: "Courier New", Courier, monospace;
+      background-color: #f4f4f9;
+    }
+    
+    /* NAVIGATION BAR STYLES */
+    #navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: #111;
+      color: #fff;
+      z-index: 1500;
+      border-bottom: 3px solid #e63946;
+    }
+    #navbar .nav-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 15px;
+      height: 60px;
+    }
+    #navbar .brand {
+      font-size: 22px;
+      font-weight: bold;
+      font-family: Impact, "Arial Black", sans-serif;
+    }
+    #navbar .brand a {
+      color: white;
+      text-decoration: none;
+    }
+    /* Toggle button (hidden on desktop) */
+    #nav-toggle {
+      display: none;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 28px;
+      cursor: pointer;
+    }
+    #navbar .nav-links {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+    }
+    #navbar .nav-links li {
+      margin-left: 10px;
+    }
+    #navbar .nav-links li a {
+      text-decoration: none;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      padding: 5px 10px;
+      border: 1px solid transparent;
+      border-radius: 3px;
+    }
+    #navbar .nav-links li a:hover,
+    #navbar .nav-links li a:focus {
+      background-color: #e63946;
+      border: 1px solid #e63946;
+      outline: none;
+    }
+    #navbar .nav-links li a.active {
+      background-color: #e63946;
+      color: #fff;
+      text-decoration: none;
+    }
+    
+    /* INPUT & BUTTON STYLES */
+    input, select {
+      padding: 10px;
+      border: 2px solid #e63946;
+      border-radius: 3px;
+      font-size: 16px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 10px 15px;
+      border: 2px solid #e63946;
+      border-radius: 3px;
+      background: #111;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover,
+    button:focus {
+      background: #e63946;
+      outline: none;
+    }
+    
+    /* AUTOCOMPLETE STYLES */
+    #autocomplete-container {
+      position: absolute;
+      background: #fff;
+      width: 100%;
+      max-height: 180px;
+      overflow-y: auto;
+      z-index: 1100;
+      border: none;
+      border-radius: 0 0 3px 3px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease-in-out;
+    }
+    #autocomplete-container.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .autocomplete-item {
+      padding: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      color: #111;
+      border-bottom: 1px solid #eee;
+    }
+    .autocomplete-item:last-child {
+      border-bottom: none;
+    }
+    .autocomplete-item:hover {
+      background-color: #f1f1f1;
+    }
+    
+    /* HELP OVERLAY STYLES */
+    #helpOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+    #helpContent {
+      background: #fff;
+      color: #111;
+      padding: 20px;
+      max-width: 600px;
+      width: 90%;
+      border-radius: 5px;
+      position: relative;
+      font-family: "Courier New", Courier, monospace;
+    }
+    #helpContent h2 {
+      margin-top: 0;
+      color: #e63946;
+    }
+    #helpClose {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #111;
+      color: #fff;
+      border: none;
+      font-size: 16px;
+      padding: 5px 10px;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+    #helpClose:hover {
+      background: #e63946;
+    }
+    
+    /* FILTERS SECTION */
+    .filters {
+      max-width: 800px;
+      margin: 20px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .filter-row {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    /* Row 1: Artist, Venue, City */
+    .filter-row.first .filter-item {
+      flex: 1;
+      min-width: 150px;
+    }
+    /* Row 2: Date filters share space evenly */
+    .filter-row.second .filter-item {
+      flex: 1;
+      min-width: 150px;
+    }
+    /* Row 3: Buttons are centered */
+    .filter-row.third {
+      justify-content: center;
+    }
+    .filter-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      width: 100%;
+    }
+    /* For the autocomplete, ensure its container is relative */
+    .filter-item.artist {
+      position: relative;
+    }
+    
+    /* TABLE STYLES */
+    h1 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+      font-size: 16px;
+    }
+    @media (max-width: 1000px) {
+      th, td {
+        padding: 10px;
+        font-size: 15px;
+      }
+    }
+    th {
+      background-color: #111;
+      color: #fff;
+    }
+    @media (max-width: 1200px) {
+      table {
+        display: block;
+        overflow-x: auto;
+      }
+      th, td {
+        white-space: nowrap;
+        font-size: 14px; 
+      }
+    }
+    /* MOBILE STACKED TABLE VIEW WITH LABELS */
+    @media (max-width: 800px) {
+      table, thead, tbody, th, td, tr {
+        display: block;
+      }
+      thead {
+        display: none;
+      }
+      tbody tr {
+        border: 1px solid #ddd;
+        margin-bottom: 10px;
+        background: white;
+        padding: 12px;
+        border-radius: 8px;
+      }
+      td {
+        display: flex;
+        flex-direction: column;
+        padding: 10px;
+        font-size: 16px;
+        white-space: normal;
+        word-break: break-word;
+      }
+      td:nth-of-type(1)::before { content: "📅 Date: "; font-weight: bold; color: #111; }
+      td:nth-of-type(2)::before { content: "🎤 Primary Artist: "; font-weight: bold; color: #111; }
+      td:nth-of-type(3)::before { content: "🤝 Played With: "; font-weight: bold; color: #111; }
+      td:nth-of-type(4)::before { content: "📍 Venue: "; font-weight: bold; color: #111; }
+      td:nth-of-type(5)::before { content: "🎭 Event Name: "; font-weight: bold; color: #111; }
+      td:nth-of-type(6)::before { content: "🌆 City: "; font-weight: bold; color: #111; }
+      td:nth-of-type(8)::before { content: "🎶 Setlist: "; font-weight: bold; color: #111; }
+      td:nth-of-type(9)::before { content: "📜 Flyer: "; font-weight: bold; color: #111; }
+      td:nth-of-type(10)::before { content: "📀 Recording: "; font-weight: bold; color: #111; }
+      td:empty { display: none; }
+    }
+    
+    /* MOBILE CSS Nav Bar */
+    @media (max-width: 600px) {
+      #navbar .nav-container {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        height: 60px;
+        padding: 10px;
+      }
+      #nav-toggle {
+        display: block;
+      }
+      /* Full-page nav menu overlay when toggled */
+      #navbar .nav-links {
+        position: fixed;
+        top: 60px;
+        left: 0;
+        width: 100%;
+        height: calc(100vh - 60px);
+        background: #111;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 1600;
+        display: none;
+      }
+      #navbar .nav-links.show {
+        display: flex;
+      }
+      #navbar .nav-links li {
+        margin: 15px 0;
+        text-align: center;
+      }
+      #navbar .nav-links li a {
+        width: 100%;
+        padding: 15px;
+        box-sizing: border-box;
+        background-color: #111;
+        color: #fff;
+      }
+      #navbar .nav-links li a:hover,
+      #navbar .nav-links li a:focus {
+        background-color: #e63946;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .filter-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      h1 { margin-top: 60px; }
+    }
+
+    /* FOOTER STYLES */
+    footer {
+      width: calc(100% + 40px);
+      margin: 40px -20px 0 -20px;
+      background: #111;
+      color: #fff;
+      text-align: center;
+      padding: 15px 0;
+      border-top: 3px solid #e63946;
+    }
+    
+    footer p {
+      margin: 0;
+      font-family: "Courier New", Courier, monospace;
+    }
+    footer a {
+      color: #fff;
+      text-decoration: none;
+    }
+    footer a:hover {
+      color: #e63946;
+      text-decoration: underline;
+    }
+
+    /* PAGINATION STYLES */
+    .pagination {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .pagination button,
+    .pagination span {
+      margin: 0 5px;
+    }
+  </style>
+</head>
+<body>
+  <!-- NAVIGATION BAR -->
+  <nav id="navbar" role="navigation" aria-label="Main Navigation">
+    <div class="nav-container">
+      <span class="brand"><a href="https://eastbaypunkda.com/vebp/">Visualizing East Bay Punk</a></span>
+      <button id="nav-toggle" aria-label="Toggle navigation">&#9776;</button>
+      <ul class="nav-links">
+        <li><a href="people.html" tabindex="0">People</a></li>
+        <li><a href="places.html" tabindex="0">Places</a></li>
+        <li><a href="words.html" tabindex="0">Words</a></li>
+        <li><a href="shows.html" class="active" tabindex="0">Shows</a></li>
+        <li><a href="gilman.html" tabindex="0">Gilman</a></li>
+        <li><a href="https://eastbaypunkda.com" tabindex="0">Zines</a></li>
+      </ul>
+    </div>
+  </nav>
+  
+  <!-- MAIN CONTENT -->
+  <h1>Punk Shows in the Bay Area (1976–1995)</h1>
+
+  <!-- Filters -->
+  <div class="filters">
+    <!-- Row 1: Artist, Venue, City -->
+    <div class="filter-row first">
+      <div class="filter-item artist">
+        <label for="artistFilter">Artist:</label>
+        <input type="text" id="artistFilter" placeholder="Select Artist" autocomplete="off" />
+        <div id="autocomplete-container"></div>
+      </div>
+      <div class="filter-item">
+        <label for="venueFilter">Venue:</label>
+        <select id="venueFilter">
+          <option value="">Select Venue</option>
+        </select>
+      </div>
+      <div class="filter-item">
+        <label for="cityFilter">City:</label>
+        <select id="cityFilter">
+          <option value="">Select City</option>
+        </select>
+      </div>
+    </div>
+    <!-- Row 2: Start and End Dates -->
+    <div class="filter-row second">
+      <div class="filter-item">
+        <label for="startDateFilter">Start Date:</label>
+        <input type="date" id="startDateFilter" />
+      </div>
+      <div class="filter-item">
+        <label for="endDateFilter">End Date:</label>
+        <input type="date" id="endDateFilter" />
+      </div>
+    </div>
+    <!-- Row 3: Buttons -->
+    <div class="filter-row third">
+      <div class="filter-item" style="max-width: 300px;">
+        <button id="clearFilters" style="width: 100%;">Clear Filters</button>
+        <button id="helpButton" style="width: 100%;">Help</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table for displaying the data -->
+  <table id="eventTable">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Primary Artist</th>
+        <th>Played With</th>
+        <th>Venue</th>
+        <th>Event Name</th>
+        <th>City</th>
+        <th>Setlist</th>
+        <th>Flyer</th>
+        <th>Recording</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Event rows will be rendered here -->
+    </tbody>
+  </table>
+
+  <!-- Pagination Controls -->
+  <div class="pagination" id="pagination"></div>
+
+  <!-- Help Overlay -->
+  <div id="helpOverlay">
+    <div id="helpContent">
+      <button id="helpClose">Close</button>
+      <h2>Help & Instructions</h2>
+      <p>
+        This application aggregates data from various sources to present a searchable historical database of East Bay punk events.
+      </p>
+      <p>
+        <strong>How to Search:</strong>
+        <br />• Type an artist's name in the autocomplete field to filter events featuring that artist.
+        <br />• Use the venue and city dropdowns to filter events by location.
+        <br />• Use the date filters to narrow down events by date.
+      </p>
+      <p>
+        <strong>Data Source:</strong>
+        <br /><a href="https://www.setlist.fm">SetList.fm</a>; <a href="https://digital.library.cornell.edu/catalog?f%5Barchival_collection_tesim%5D%5B%5D=Aaron+Cometbus+Punk+and+Underground+Press+Collection&search_field=all_fields">Aaron Cometbus Punk and Underground Press Collection</a> at Cornell University Library; Brian Edge, <em>924 Gilman: The Story So Far</em>, Maximum Rocknroll, 2004; Dirk Dirksen, <em>Shut Up You Animals!!! The Pope is Dead. A Remembrance of Dirk Dirksen: A History of the Mabuhay Gardens</em>, edited by James Stark and Ronald Turner, Last Gasp, 2021. 
+      </p>
+    </div>
+  </div>
+
+  <script>
+    let events = [];
+    let displayEvents = []; // Grouped events (after filtering)
+    let artists = new Set();
+    let venues = new Set();
+    let cities = new Set();
+    let artistArray = []; // Sorted array of artist names
+
+    // Pagination variables
+    let currentPage = 1;
+    const rowsPerPage = 100;
+
+    // Utility: Format date from YYYY-MM-DD to MM/DD/YYYY
+    function formatDate(dateStr) {
+      const parts = dateStr.split('-');
+      if(parts.length !== 3) return dateStr;
+      return `${parts[1]}/${parts[2]}/${parts[0]}`;
+    }
+
+    // Helper: Remove a leading "The " (case-insensitive)
+    function stripLeadingThe(name) {
+      return name.replace(/^the\s+/i, '').trim();
+    }
+
+    // Load events from JSON file
+    fetch("events.json")
+      .then(response => response.json())
+      .then(data => {
+        events = data;
+        events.forEach(event => {
+          if (event.Artist) artists.add(event.Artist);
+          if (event.Venue) venues.add(event.Venue);
+          if (event.City) cities.add(event.City);
+        });
+        populateFilters();
+        // Fixed dates upon first load.
+        const fixedStart = "1976-01-01";
+        const fixedEnd = "1995-12-31";
+        const startDateInput = document.getElementById('startDateFilter');
+        const endDateInput = document.getElementById('endDateFilter');
+        startDateInput.value = fixedStart;
+        startDateInput.min = fixedStart;
+        endDateInput.value = fixedEnd;
+        endDateInput.max = fixedEnd;
+        applyFilters();
+      })
+      .catch(error => console.error("Error loading JSON data:", error));
+
+    function populateFilters() {
+      artistArray = Array.from(artists)
+        .sort((a, b) => stripLeadingThe(a).localeCompare(stripLeadingThe(b)));
+      const venueFilter = document.getElementById('venueFilter');
+      Array.from(venues)
+        .sort((a, b) => a.localeCompare(b))
+        .forEach(venue => {
+          let option = document.createElement('option');
+          option.value = venue;
+          option.textContent = venue;
+          venueFilter.appendChild(option);
+        });
+      const cityFilter = document.getElementById('cityFilter');
+      Array.from(cities)
+        .sort((a, b) => a.localeCompare(b))
+        .forEach(city => {
+          let option = document.createElement('option');
+          option.value = city;
+          option.textContent = city;
+          cityFilter.appendChild(option);
+        });
+    }
+
+    function showArtistSuggestions() {
+      const input = document.getElementById('artistFilter');
+      const value = input.value.toLowerCase();
+      const container = document.getElementById('autocomplete-container');
+      container.innerHTML = "";
+      if (!value) {
+        container.classList.remove('visible');
+        return;
+      }
+      const suggestions = artistArray.filter(artist =>
+        artist.toLowerCase().includes(value)
+      );
+      if (suggestions.length === 0) {
+        container.classList.remove('visible');
+        return;
+      }
+      suggestions.forEach(artist => {
+        let div = document.createElement('div');
+        div.textContent = artist;
+        div.classList.add('autocomplete-item');
+        div.addEventListener('click', () => {
+          input.value = artist;
+          container.innerHTML = "";
+          container.classList.remove('visible');
+          applyFilters();
+        });
+        container.appendChild(div);
+      });
+      container.classList.add('visible');
+    }
+
+    document.getElementById('artistFilter').addEventListener('blur', () => {
+      setTimeout(() => {
+        document.getElementById('autocomplete-container').classList.remove('visible');
+      }, 200);
+    });
+    document.getElementById('artistFilter').addEventListener('input', () => {
+      showArtistSuggestions();
+      applyFilters();
+    });
+
+    function groupEvents(eventsArray) {
+      const groups = {};
+      eventsArray.forEach(event => {
+        const key = `${event.Date}|${event.Venue}|${event['Event Name']}`;
+        if (!groups[key]) {
+          groups[key] = {
+            Date: event.Date,
+            'Event Name': event['Event Name'],
+            Venue: event.Venue,
+            City: event.City,
+            'Link to Setlist': event['Link to Setlist'] || '',
+            'Link to Flyer': event['Link to Flyer'] || '',
+            'Link to Recording': event['Link to Recording'] || '',
+            Artists: new Set()
+          };
+        }
+        groups[key].Artists.add(event.Artist);
+      });
+      return Object.values(groups).map(group => {
+        group.Artists = Array.from(group.Artists).sort((a, b) => a.localeCompare(b));
+        return group;
+      });
+    }
+
+    function populateTable(pageData) {
+      const tableBody = document.querySelector('#eventTable tbody');
+      tableBody.innerHTML = "";
+      const fragment = document.createDocumentFragment();
+      const selectedArtist = document.getElementById('artistFilter').value;
+      pageData.forEach(group => {
+        let primaryArtist = "";
+        let playedWith = "";
+        if (selectedArtist && group.Artists.includes(selectedArtist)) {
+          primaryArtist = selectedArtist;
+          playedWith = group.Artists.filter(a => a !== selectedArtist).join(", ");
+        } else {
+          primaryArtist = group.Artists[0];
+          playedWith = group.Artists.slice(1).join(", ");
+        }
+        let row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${formatDate(group.Date)}</td>
+          <td>${primaryArtist}</td>
+          <td>${playedWith}</td>
+          <td>${group.Venue}</td>
+          <td>${group['Event Name']}</td>
+          <td>${group.City}</td>
+          <td>${group['Link to Setlist'] ? `<a href="${group['Link to Setlist']}" target="_blank">Setlist</a>` : ''}</td>
+          <td>${group['Link to Flyer'] ? `<a href="${group['Link to Flyer']}" target="_blank">Flyer</a>` : ''}</td>
+          <td>${group['Link to Recording'] ? `<a href="${group['Link to Recording']}" target="_blank">Recording</a>` : ''}</td>
+        `;
+        fragment.appendChild(row);
+      });
+      tableBody.appendChild(fragment);
+    }
+
+    function renderPagination() {
+      const paginationDiv = document.getElementById('pagination');
+      paginationDiv.innerHTML = "";
+      const totalPages = Math.ceil(displayEvents.length / rowsPerPage);
+      if(totalPages <= 1) return;
+      let prevButton = document.createElement('button');
+      prevButton.textContent = "Previous";
+      prevButton.disabled = currentPage === 1;
+      prevButton.addEventListener('click', () => {
+        if(currentPage > 1) {
+          currentPage--;
+          updateTable();
+        }
+      });
+      paginationDiv.appendChild(prevButton);
+      let pageIndicator = document.createElement('span');
+      pageIndicator.textContent = ` Page ${currentPage} of ${totalPages} `;
+      paginationDiv.appendChild(pageIndicator);
+      let nextButton = document.createElement('button');
+      nextButton.textContent = "Next";
+      nextButton.disabled = currentPage === totalPages;
+      nextButton.addEventListener('click', () => {
+        if(currentPage < totalPages) {
+          currentPage++;
+          updateTable();
+        }
+      });
+      paginationDiv.appendChild(nextButton);
+    }
+
+    function updateTable() {
+      const start = (currentPage - 1) * rowsPerPage;
+      const pageData = displayEvents.slice(start, start + rowsPerPage);
+      populateTable(pageData);
+      renderPagination();
+    }
+
+    function applyFilters() {
+      const startDateFilter = document.getElementById('startDateFilter').value;
+      const endDateFilter = document.getElementById('endDateFilter').value;
+      const artistFilter = document.getElementById('artistFilter').value;
+      const venueFilter = document.getElementById('venueFilter').value;
+      const cityFilter = document.getElementById('cityFilter').value;
+      const startDate = startDateFilter ? new Date(startDateFilter) : null;
+      const endDate = endDateFilter ? new Date(endDateFilter) : null;
+      const filteredEvents = events.filter(event => {
+        const eventDate = new Date(event.Date);
+        return (
+          (!startDate || eventDate >= startDate) &&
+          (!endDate || eventDate <= endDate) &&
+          (!venueFilter || event.Venue === venueFilter) &&
+          (!cityFilter || event.City === cityFilter)
+        );
+      });
+      let groupedEvents = groupEvents(filteredEvents);
+      if (artistFilter) {
+        const filterLower = artistFilter.toLowerCase();
+        groupedEvents = groupedEvents.filter(group =>
+          group.Artists.some(a => a.toLowerCase() === filterLower)
+        );
+      }
+      displayEvents = groupedEvents;
+      currentPage = 1;
+      updateTable();
+    }
+
+    document.getElementById('startDateFilter').addEventListener('input', applyFilters);
+    document.getElementById('endDateFilter').addEventListener('input', applyFilters);
+    document.getElementById('venueFilter').addEventListener('change', applyFilters);
+    document.getElementById('cityFilter').addEventListener('change', applyFilters);
+
+    document.getElementById('clearFilters').addEventListener('click', () => {
+      document.getElementById('startDateFilter').value = "";
+      document.getElementById('endDateFilter').value = "";
+      document.getElementById('artistFilter').value = "";
+      document.getElementById('venueFilter').value = "";
+      document.getElementById('cityFilter').value = "";
+      applyFilters();
+    });
+
+    const navToggle = document.getElementById('nav-toggle');
+    navToggle.addEventListener('click', () => {
+      const navLinks = document.querySelector('#navbar .nav-links');
+      navLinks.classList.toggle('show');
+    });
+
+    const helpButton = document.getElementById('helpButton');
+    const helpOverlay = document.getElementById('helpOverlay');
+    const helpClose = document.getElementById('helpClose');
+    helpButton.addEventListener('click', () => {
+      helpOverlay.style.display = 'flex';
+    });
+    helpClose.addEventListener('click', () => {
+      helpOverlay.style.display = 'none';
+    });
+  </script>
+  
+  <!-- FOOTER -->
+  <footer>
+    <p>
+      <a href="https://stefanomorello.com" target="_blank">© 2025 Stefano Morello</a> |
+      <a href="https://github.com/smorello87/ebpdav" target="_blank">
+        <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub" style="height:20px; vertical-align:middle;">
+      </a> 
+    </p>
+  </footer>
+</body>
+</html>

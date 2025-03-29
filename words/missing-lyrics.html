@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Words – Missing Lyrics</title>
+  <!-- Bootstrap CSS for styling -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <style>
+    /* Use the same font, palette, and basic styling as the Words page */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: "Courier New", Courier, monospace;
+      background-color: #f7f7f7;
+    }
+    .container {
+      margin-top: 70px;
+    }
+    /* Back link styling */
+    a.back-link {
+      font-size: 16px;
+      color: #e63946;
+      text-decoration: none;
+      margin-bottom: 20px;
+      display: inline-block;
+    }
+    a.back-link:hover {
+      text-decoration: underline;
+    }
+    h1, h3 {
+      color: #111;
+    }
+    h3 {
+      margin-top: 20px;
+    }
+    .lyrics-section {
+      margin-bottom: 30px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #ccc;
+    }
+    .track-list {
+      margin-left: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Back link at the top -->
+    <a href="words.html#help" class="back-link">&larr; Back to Words</a>
+    
+    <h1 class="text-center">Missing Lyrics</h1>
+    <!-- Notice to submit lyrics placed right below the h1 -->
+    <p class="text-center">
+        If you have any of these missing lyrics, or can provide a high-resolution photo of the liner notes where they appear, please get in touch</a>.
+      </p>
+      
+    
+    <div id="lyricsContent"></div>
+    
+    <!-- Back link at the bottom -->
+    <a href="words.html#help" class="back-link">&larr; Back to Words</a>
+  </div>
+  
+  <!-- jQuery to load the JSON file and render the missing lyrics -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    $(document).ready(function() {
+      $.getJSON('missing_lyrics.json', function(data) {
+        let content = '';
+        // Iterate over each release in the JSON file.
+        $.each(data, function(releaseTitle, releaseData) {
+          // Gather all unique artists for the tracks in this release.
+          let artists = [];
+          $.each(releaseData.tracks, function(trackTitle, trackData) {
+            if (trackData.artist && !artists.includes(trackData.artist)) {
+              artists.push(trackData.artist);
+            }
+          });
+          // Determine the artist display for the header:
+          // if there's only one artist, display that name; otherwise, use "Various Artists".
+          let artistDisplay = (artists.length === 1) ? artists[0] : "Various Artists";
+          
+          // Build HTML for this release.
+          content += '<div class="lyrics-section">';
+          content += '<h3>' + artistDisplay + ' – ' + releaseTitle + '</h3>';
+          content += '<ul class="track-list">';
+          $.each(releaseData.tracks, function(trackTitle, trackData) {
+            // Only show track if its lyrics field is missing or empty.
+            if (!trackData.lyrics || trackData.lyrics.trim() === "") {
+              // If this is a Various Artists release, include the track's artist.
+              if (artistDisplay === "Various Artists") {
+                content += '<li>' + trackData.artist + ' – ' + trackTitle + '</li>';
+              } else {
+                content += '<li>' + trackTitle + '</li>';
+              }
+            }
+          });
+          content += '</ul>';
+          content += '</div>';
+        });
+        $('#lyricsContent').html(content);
+      })
+      .fail(function() {
+        $('#lyricsContent').html('<p>Error loading missing lyrics data.</p>');
+      });
+    });
+  </script>
+</body>
+</html>

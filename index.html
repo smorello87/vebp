@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Visualizing East Bay Punk</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow-x: hidden;
+    }
+    body {
+      font-family: "Courier New", Courier, monospace;
+      background-color: #f4f4f9;
+    }
+    /* NAVIGATION BAR */
+    #navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 60px;
+      background: #111;
+      color: #fff;
+      z-index: 1500;
+      border-bottom: 3px solid #e63946;
+    }
+    #navbar .nav-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 15px;
+      height: 100%;
+    }
+    #navbar .brand {
+      font-size: 22px;
+      font-weight: bold;
+      font-family: Impact, "Arial Black", sans-serif;
+    }
+    #navbar .brand a {
+      color: white;
+      text-decoration: none;
+    }
+    #nav-toggle {
+      display: none;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 28px;
+      cursor: pointer;
+    }
+    #navbar .nav-links {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+    }
+    #navbar .nav-links li {
+      margin-left: 10px;
+    }
+    #navbar .nav-links li a {
+      text-decoration: none;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      padding: 5px 10px;
+      border: 1px solid transparent;
+      border-radius: 3px;
+    }
+    #navbar .nav-links li a:hover,
+    #navbar .nav-links li a:focus {
+      background-color: #e63946;
+      border: 1px solid #e63946;
+      outline: none;
+    }
+    #navbar .nav-links li a.active {
+      background-color: #e63946;
+      color: #fff;
+      text-decoration: none;
+    }
+    
+    /* MOBILE NAVIGATION */
+    @media (max-width: 600px) {
+      #navbar .nav-container {
+        padding: 10px;
+      }
+      #nav-toggle {
+        display: block;
+      }
+      #navbar .nav-links {
+        position: fixed;
+        top: 60px;
+        left: 0;
+        width: 100%;
+        height: calc(100vh - 60px);
+        background: #111;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 1600;
+        display: none;
+      }
+      #navbar .nav-links.show {
+        display: flex;
+      }
+      #navbar .nav-links li {
+        margin: 15px 0;
+        text-align: center;
+      }
+      #navbar .nav-links li a {
+        width: 100%;
+        padding: 15px;
+        box-sizing: border-box;
+      }
+    }
+    
+    /* FOOTER */
+    footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 45px;
+      background: #111;
+      color: #fff;
+      text-align: center;
+      border-top: 3px solid #e63946;
+      z-index: 1500;
+    }
+    footer p {
+      margin: 0;
+      line-height: 45px;
+    }
+    footer a {
+      color: #fff;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- NAVIGATION BAR -->
+  <nav id="navbar" role="navigation" aria-label="Main Navigation">
+    <div class="nav-container">
+      <span class="brand"><a href="https://eastbaypunkda.com/vebp/">Visualizing East Bay Punk</a></span>
+      <button id="nav-toggle" aria-label="Toggle navigation">&#9776;</button>
+      <ul class="nav-links">
+        <li><a href="people.html" tabindex="0">People</a></li>
+        <li><a href="places.html" tabindex="0">Places</a></li>
+        <li><a href="words.html" tabindex="0">Words</a></li>
+        <li><a href="shows.html" tabindex="0">Shows</a></li>
+        <li><a href="gilman.html" tabindex="0">Gilman</a></li>
+        <li><a href="https://eastbaypunkda.com" tabindex="0">Zines</a></li>
+      </ul>
+    </div>
+  </nav>
+  
+  <div id="main-content">
+    <div id="main-content" style="padding: 80px 20px 60px; max-width: 900px; margin: auto; line-height: 1.6;">
+        <h1 style="font-family: Impact, 'Arial Black', sans-serif; font-size: 32px; margin-bottom: 20px; color: #111;">Welcome to VEBP</h1>
+        <p>
+          Visualizing East Bay Punk (VEBP) is a suite of web applications that renders data from the Bay Area punk scene into an accessible, analyzable format. Providing a macro-level view that complement the lived experiences captured by the East Bay Punk Digital Archive, VEBP allows researchers and fans alike to explore the networks, geography, events, and cultural production of the scene through interactive visualizations.
+        </p>
+        
+        <h2 style="font-size: 24px; margin-top: 40px; margin-bottom: 10px; color: #111;">VEBP's Tools at a Glance</h2>
+        <ul style="list-style-type: disc; padding-left: 20px;">
+          <li><strong>People</strong> visualizes the network of band members in the San Francisco Bay Area punk scene, revealing interconnections and overlapping memberships.</li>
+          <li><strong>Places</strong> is an interactive ArcGIS-based map that displays key punk venues, cultural hotspots, and other counter-infrastructural nodes.</li>
+          <li><strong>Words</strong> explores  themes and semantic relationships in the lyrics of all the Lookout Records releases between 1987 and 1994.</li>
+          <li><strong>Shows</strong> offers a fast, filterable event search interface to explore over 8,000 punk performances across the Bay Area.</li>
+          <li><strong>Gilman</strong> delivers an interactive visualization of the Gilman Street Project’s performance history.</li>
+        </ul>
+      </div>
+  </div>
+  
+  <!-- FOOTER -->
+  <footer>
+    <p>
+      <a href="https://stefanomorello.com" target="_blank">© 2025 Stefano Morello</a> |
+      <a href="https://github.com/smorello87/ebpdav" target="_blank">
+        <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub" style="height:20px; vertical-align:middle;">
+      </a>
+    </p>
+  </footer>
+  
+  <script>
+    // Mobile nav toggle
+    const navToggle = document.getElementById('nav-toggle');
+    navToggle.addEventListener('click', () => {
+      const navLinks = document.querySelector('#navbar .nav-links');
+      navLinks.classList.toggle('show');
+    });
+  </script>
+</body>
+</html>

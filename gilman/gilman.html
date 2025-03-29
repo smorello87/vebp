@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <!-- Scaling on mobile -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gilman</title>
+  <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+  <style>
+    /* Global resets, fonts, background */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: "Courier New", Courier, monospace;
+      background-color: #fafafa;
+      background-image: url('https://www.toptal.com/designers/subtlepatterns/patterns/double-bubble-outline.png');
+    }
+    /* Navigation Bar */
+    #navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: #111;
+      color: #fff;
+      z-index: 1500;
+      border-bottom: 3px solid #e63946;
+    }
+    #navbar .nav-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 15px;
+      height: 60px;
+    }
+    #navbar .brand {
+      font-size: 22px;
+      font-weight: bold;
+      font-family: Impact, "Arial Black", sans-serif;
+    }
+    #navbar .brand a {
+      color: white;
+      text-decoration: none;
+    }
+    /* Toggle button (hidden on desktop) */
+    #nav-toggle {
+      display: none;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 28px;
+      cursor: pointer;
+    }
+    #navbar .nav-links {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+    }
+    #navbar .nav-links li {
+      margin-left: 10px;
+    }
+    #navbar .nav-links li a {
+      text-decoration: none;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      padding: 5px 10px;
+      border: 1px solid transparent;
+      border-radius: 3px;
+    }
+    #navbar .nav-links li a:hover,
+    #navbar .nav-links li a:focus {
+      background-color: #e63946;
+      border: 1px solid #e63946;
+      outline: none;
+    }
+    #navbar .nav-links li a.active {
+      background-color: #e63946;
+      color: #fff;
+      text-decoration: none;
+    }
+    
+    /* Controls area below navbar */
+    #controls {
+      padding: 10px;
+      position: fixed;
+      top: 70px;
+      left: 0;
+      z-index: 1000;
+      background: #fff;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      width: 100%;
+      border-bottom: 2px solid #ccc;
+    }
+    /* Search container for autocomplete */
+    #search-container {
+      position: relative;
+    }
+    #search {
+      padding: 10px;
+      margin: 5px;
+      border: 2px solid #e63946;
+      border-radius: 3px;
+      width: 220px;
+      font-size: 16px;
+      outline: none;
+    }
+    #search:focus {
+      border-color: #a8dadc;
+    }
+    button {
+      padding: 10px 15px;
+      margin: 5px;
+      border: 2px solid #e63946;
+      border-radius: 3px;
+      background: #111;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover,
+    button:focus {
+      background: #e63946;
+      outline: none;
+    }
+    #autocomplete-container {
+      position: absolute;
+      top: calc(100% + 2px);
+      left: 0;
+      background: #fff;
+      width: 100%;
+      max-height: 180px;
+      overflow-y: auto;
+      z-index: 1100;
+      border: none;
+      border-radius: 0 0 3px 3px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease-in-out;
+    }
+    #autocomplete-container.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .autocomplete-item {
+      padding: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      color: #111;
+      border-bottom: 1px solid #eee;
+    }
+    .autocomplete-item:last-child {
+      border-bottom: none;
+    }
+    .autocomplete-item:hover {
+      background-color: #f1f1f1;
+    }
+    
+    /* Main container holding network & details sidebar */
+    #main-container {
+      display: flex;
+      margin-top: 130px;
+      height: calc(100vh - 130px);
+    }
+    /* Network container */
+    #network-container {
+      flex: 1;
+      border-top: 3px solid #e63946;
+    }
+    /* Details sidebar */
+    #details-sidebar {
+      width: 300px;
+      background: #fff;
+      border-left: 2px solid #ccc;
+      padding: 15px;
+      overflow-y: auto;
+    }
+    
+    /* Help overlay */
+    #helpOverlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0,0,0,0.8);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+    #helpContent {
+      background: #fff;
+      padding: 20px;
+      width: 90%;
+      max-width: 400px;
+      border-radius: 5px;
+      text-align: left;
+    }
+    #helpContent h2 {
+      margin-top: 0;
+      font-family: Impact, "Arial Black", sans-serif;
+      color: #e63946;
+    }
+    #helpContent p,
+    #helpContent ul,
+    #helpContent li {
+      font-size: 14px;
+      color: #111;
+    }
+    #helpContent button {
+      margin-top: 15px;
+      width: 100%;
+      background: #111;
+      color: #fff;
+      border: 2px solid #e63946;
+    }
+    
+    @media (min-width: 601px) {
+      /* Hide sidebar close button on desktop */
+      #sidebar-close {
+        display: none;
+      }
+    }
+    @media (max-width: 600px) {
+      /* Nav Bar: one row with brand left and toggle on right */
+      #navbar .nav-container {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        height: 60px;
+        padding: 10px;
+      }
+      #nav-toggle {
+        display: block;
+      }
+      /* Full-page nav menu overlay when toggled */
+      #navbar .nav-links {
+        position: fixed;
+        top: 60px;
+        left: 0;
+        width: 100%;
+        height: calc(100vh - 60px);
+        background: #111;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 1600;
+        display: none;
+      }
+      #navbar .nav-links.show {
+        display: flex;
+      }
+      #navbar .nav-links li {
+        margin: 15px 0;
+        text-align: center;
+      }
+      #navbar .nav-links li a {
+        width: 100%;
+        padding: 15px;
+        box-sizing: border-box;
+        background-color: #111;
+        color: #fff;
+      }
+      #navbar .nav-links li a:hover,
+      #navbar .nav-links li a:focus {
+        background-color: #e63946;
+      }
+      
+      /* Controls */
+      #controls {
+        position: fixed;
+        top: 80px;  
+        left: 0;
+        width: 100%;
+        padding: 10px 15px;
+        box-sizing: border-box;
+        display: grid;
+        grid-template-rows: auto auto;
+        row-gap: 5px;
+        border-bottom: 2px solid #ccc;
+        background: #fff;
+        z-index: 1000;
+      }
+      /* Search bar spans full width */
+      #search-container {
+        grid-column: 1 / -1;
+        width: 100%;
+      }
+      #search {
+        width: 100%;
+        box-sizing: border-box;
+        margin: 5px 0 10px 0;
+      }
+      /* Force the three buttons to be on a single row */
+      #controls {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      #controls > button {
+        width: 100%;
+        margin: 5px;
+      }
+      
+      /* Node labels remain visible on touch/double tap */
+      #network-container {
+        touch-action: manipulation;
+      }
+      .vis-network .vis-label {
+        font-size: 18px !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        transition: none !important;
+      }
+      
+      /* Main container becomes vertical */
+      #main-container {
+        flex-direction: column;
+        margin-top: 130px;
+        height: calc(100vh - 130px);
+      }
+      #network-container {
+        height: 60vh;
+      }
+      
+      /* Details sidebar as an overlay on mobile (hidden on load) */
+      #details-sidebar {
+        display: none;  /* initially hidden */
+        position: fixed;
+        top: 80px;
+        right: 0;
+        width: 50%;
+        height: calc(100vh - 80px);
+        background: #fff;
+        padding: 15px;
+        overflow-y: auto;
+        z-index: 2000;
+        box-sizing: border-box;
+      }
+      /* Show close button on mobile */
+      #sidebar-close {
+        display: block;
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: transparent;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: #111;
+      }
+    }
+    /* FOOTER */
+    footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 45px;
+      background: #111;
+      color: #fff;
+      text-align: center;
+      border-top: 3px solid #e63946;
+      z-index: 1500;
+    }
+    footer p {
+      margin: 0;
+      line-height: 45px;
+    }
+    footer a {
+      color: #fff;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation Bar -->
+  <nav id="navbar" role="navigation" aria-label="Main Navigation">
+    <div class="nav-container">
+      <span class="brand"><a href="https://eastbaypunkda.com/vebp/">Visualizing East Bay Punk</a></span>
+      <!-- Toggle button for mobile nav (next to brand) -->
+      <button id="nav-toggle" aria-label="Toggle navigation">&#9776;</button>
+      <ul class="nav-links">
+        <li><a href="people.html" tabindex="0">People</a></li>
+        <li><a href="places.html" tabindex="0">Places</a></li>
+        <li><a href="words.html" tabindex="0">Words</a></li>
+        <li><a href="shows.html" tabindex="0">Shows</a></li>
+        <li><a href="gilman.html" class="active" tabindex="0">Gilman</a></li>
+        <li><a href="https://eastbaypunkda.com" tabindex="0">Zines</a></li>
+      </ul>
+    </div>
+  </nav>
+    
+  <!-- FOOTER -->
+  <footer>
+    <p>
+      <a href="https://stefanomorello.com" target="_blank">© 2025 Stefano Morello</a> |
+      <a href="https://github.com/smorello87/ebpdav" target="_blank">
+        <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub" style="height:20px; vertical-align:middle;">
+      </a>
+    </p>
+  </footer>
+  <!-- Controls -->
+  <div id="controls">
+    <div id="search-container">
+      <input type="search" id="search" placeholder="Search band..." aria-label="Search for a band">
+      <div id="autocomplete-container"></div>
+    </div>
+    <button onclick="resetNetwork()">Reset View</button>
+    <button onclick="exportPNG()">Export</button>
+    <button onclick="openHelp()">Help</button>
+  </div>
+  
+  <!-- Main container holding network and details sidebar -->
+  <div id="main-container">
+    <div id="network-container"></div>
+    <div id="details-sidebar" aria-live="polite">
+      <!-- The close button will be injected via JS when sidebar is shown on mobile -->
+    </div>
+  </div>
+  
+  <!-- Help Overlay -->
+  <div id="helpOverlay">
+    <div id="helpContent">
+      <h2>About</h2>
+      <p>
+        This interactive visualization shows every performance at the Gilman Street Project between 1986 and 1994. Each node represents a band, with its size reflecting the number of shows played at Gilman. Connections between nodes indicate shared performances; thicker edges indicate more frequently shared bills. 
+      </p>
+      <p><strong>How to use:</strong></p>
+      <ul>
+        <li><strong>Click:</strong> Click on any node to open a sidebar that provides detailed information about that band's number of shows and the other bands they have shared the stage with.
+
+        </li><li><strong>Search:</strong> Begin typing a band name. Matching options will appear. Tap a suggestion or press Enter to filter the network and display details on that band's performances in the sidebar.</li>
+        <li><strong>Reset View:</strong> Click the "Reset View" button to return to the full network layout.</li>
+        <li><strong>Export PNG:</strong> Click the "Export" button to save the current network view as a PNG image.</li>
+        <li><strong>Drag & Zoom:</strong> You can drag nodes and pan/zoom around the network.</li>
+      </ul>
+      <p><strong>Data Source:</strong> Brian Edge, <em>924 Gilman: The Story So Far</em>, Maximum Rocknroll, 2004.</p>
+      <button onclick="closeHelp()">Close</button>
+    </div>
+  </div>
+  
+  <script>
+    // Toggle navigation menu on mobile
+    document.getElementById('nav-toggle').addEventListener('click', function() {
+      const navLinks = document.querySelector('#navbar .nav-links');
+      navLinks.classList.toggle('show');
+    });
+    
+    // Sidebar close function for mobile
+    function closeSidebar() {
+      document.getElementById('details-sidebar').style.display = 'none';
+    }
+    
+    // Autocomplete event listeners for search input
+    const searchInput = document.getElementById('search');
+    searchInput.addEventListener('input', function(e) {
+      updateAutocompleteSuggestions(e.target.value);
+    });
+    searchInput.addEventListener('keydown', function(e) {
+      if (e.key === "Enter") {
+        filterNetwork(e.target.value.trim().toLowerCase());
+        document.getElementById('autocomplete-container').classList.remove('visible');
+      }
+    });
+    
+    // Global variables
+    let network = null;
+    let allNodes = [];
+    let allEdges = [];
+    let originalNodes = [];
+    let originalEdges = [];
+    let searchActive = false;
+    let initialView = null;
+    let initialScale = null;
+    let showCounts = {};
+    let bandNames = [];
+    
+    async function init() {
+      try {
+        const response = await fetch("weighted-bands.csv");
+        const rawData = await response.text();
+        const edges = [];
+        const nodes = new Set();
+        let minWeight = Infinity;
+        let maxWeight = 0;
+    
+        // Parse CSV (optional header row)
+        const lines = rawData.split('\n').filter(l => l.trim());
+        const hasHeader = lines[0].toLowerCase().includes('source');
+        lines.slice(hasHeader ? 1 : 0).forEach(line => {
+          const parts = line.split(',').map(s => s.trim());
+          if (parts.length < 3) return;
+          const [source, target, weightStr] = parts;
+          if (source && target && weightStr) {
+            let w = parseInt(weightStr);
+            edges.push({
+              from: source,
+              to: target,
+              weight: w,
+              title: `${source} & ${target}\nShared shows: ${w}`,
+              width: 1
+            });
+            nodes.add(source).add(target);
+            showCounts[source] = (showCounts[source] || 0) + w;
+            showCounts[target] = (showCounts[target] || 0) + w;
+            if (w < minWeight) minWeight = w;
+            if (w > maxWeight) maxWeight = w;
+          }
+        });
+    
+        edges.forEach(edge => {
+          edge.width = (maxWeight === minWeight)
+            ? 5
+            : 1 + 9 * ((edge.weight - minWeight) / (maxWeight - minWeight));
+        });
+    
+        let minShowCount = Infinity;
+        let maxShowCount = 0;
+        for (let band in showCounts) {
+          if (showCounts[band] < minShowCount) minShowCount = showCounts[band];
+          if (showCounts[band] > maxShowCount) maxShowCount = showCounts[band];
+        }
+    
+        originalNodes = Array.from(nodes).map(id => {
+          let size = 25;
+          if (maxShowCount !== minShowCount) {
+            size = 25 + ((showCounts[id] - minShowCount) / (maxShowCount - minShowCount)) * (50 - 25);
+          }
+          return {
+            id,
+            label: id,
+            font: { size: 16, color: '#000000', face: 'Arial' },
+            color: '#f0f0f0',
+            size: size
+          };
+        });
+        if (window.innerWidth < 600) {
+          originalNodes = originalNodes.map(node => ({
+            ...node,
+            font: { ...node.font, size: 18 }
+          }));
+        }
+        bandNames = originalNodes.map(node => node.label);
+        originalEdges = edges;
+    
+        resetNetwork();
+    
+        const container = document.getElementById('network-container');
+        network = new vis.Network(container, {
+          nodes: new vis.DataSet(allNodes),
+          edges: new vis.DataSet(allEdges)
+        }, {
+          physics: {
+            stabilization: { enabled: true, iterations: 1000 },
+            solver: 'barnesHut',
+            barnesHut: { gravitationalConstant: -4000, springLength: 250, avoidOverlap: 1 }
+          },
+          nodes: {
+            shape: 'dot',
+            scaling: { min: 20, max: 30 },
+            font: { size: 16, color: '#000000', face: 'Arial' }
+          },
+          edges: {
+            smooth: false,
+            color: 'rgba(100, 100, 100, 0.5)'
+          },
+          interaction: { dragNodes: true, dragView: true, zoomView: true },
+          labelHighlightBold: false
+        });
+    
+        network.once("stabilizationIterationsDone", () => {
+          if (!searchActive) {
+            const positions = network.getPositions();
+            originalNodes = originalNodes.map(node => positions[node.id] ? { ...node, x: positions[node.id].x, y: positions[node.id].y } : node);
+            initialView = network.getViewPosition();
+            initialScale = network.getScale();
+            if (originalNodes.length > 1000) { clusterGeneralView(); }
+          }
+          network.setOptions({ physics: false });
+        });
+    
+        network.on('dragEnd', function (params) {
+          params.nodes.forEach(nodeId => {
+            let pos = network.getPositions([nodeId])[nodeId];
+            let viewPosition = network.getViewPosition();
+            let scale = network.getScale();
+            let rect = document.getElementById('network-container').getBoundingClientRect();
+            let halfWidth = rect.width / (2 * scale);
+            let halfHeight = rect.height / (2 * scale);
+            let minX = viewPosition.x - halfWidth, maxX = viewPosition.x + halfWidth;
+            let minY = viewPosition.y - halfHeight, maxY = viewPosition.y + halfHeight;
+            let newX = pos.x, newY = pos.y, changed = false;
+            if (pos.x < minX) { newX = minX; changed = true; }
+            if (pos.x > maxX) { newX = maxX; changed = true; }
+            if (pos.y < minY) { newY = minY; changed = true; }
+            if (pos.y > maxY) { newY = maxY; changed = true; }
+            if (changed) { network.moveNode(nodeId, newX, newY); }
+          });
+        });
+    
+        network.on("click", function(params) {
+          const nodesData = network.body.data.nodes;
+          if (params.nodes.length > 0) {
+            let selectedId = params.nodes[0];
+            originalNodes.forEach(node => {
+              nodesData.update({ id: node.id, color: '#f0f0f0', size: node.size });
+            });
+            nodesData.update({ id: selectedId, color: '#FF5733', size: originalNodes.find(n => n.id === selectedId).size + 10 });
+            let neighborIds = network.getConnectedNodes(selectedId);
+            neighborIds.forEach(nId => {
+              let originalNode = originalNodes.find(n => n.id === nId);
+              nodesData.update({ id: nId, color: '#FFC300', size: originalNode.size + 5 });
+            });
+            let selectedNode = originalNodes.find(n => n.id === selectedId);
+            let detailsHTML = `<h3>${selectedNode.label}</h3>`;
+            detailsHTML += `<p>Performed at Gilman ${showCounts[selectedNode.id] || 0} ${showCounts[selectedNode.id] == 1 ? "show" : "time(s) between 1986 and 1995"}</p>`;
+            let connections = originalEdges.filter(edge => edge.from === selectedId || edge.to === selectedId);
+            if (connections.length > 0) {
+              detailsHTML += `<h4>Played:</h4><ul>`;
+              connections.forEach(edge => {
+                let other = (edge.from === selectedId ? edge.to : edge.from);
+                detailsHTML += `<li>${edge.weight} ${edge.weight === 1 ? "show" : "shows"} with ${other}</li>`;
+              });
+              detailsHTML += `</ul>`;
+            } else {
+              detailsHTML += `<p>No connections found.</p>`;
+            }
+            const sidebar = document.getElementById('details-sidebar');
+            sidebar.innerHTML = `<button id="sidebar-close" onclick="closeSidebar()">✕</button>` + detailsHTML;
+            if (window.innerWidth < 600) {
+              sidebar.style.display = 'block';
+            }
+          } else {
+            originalNodes.forEach(node => {
+              nodesData.update({ id: node.id, color: '#f0f0f0', size: node.size });
+            });
+            document.getElementById('details-sidebar').innerHTML = '';
+          }
+        });
+        network.on("deselectNode", function () {
+          const nodesData = network.body.data.nodes;
+          originalNodes.forEach(node => {
+            nodesData.update({ id: node.id, color: '#f0f0f0', size: node.size });
+          });
+          document.getElementById('details-sidebar').innerHTML = '';
+        });
+    
+      } catch (err) {
+        console.error('Error:', err);
+      }
+    }
+    
+    function updateAutocompleteSuggestions(query) {
+      const container = document.getElementById('autocomplete-container');
+      container.innerHTML = '';
+      if (!query) { container.classList.remove('visible'); return; }
+      const suggestions = bandNames.filter(name => name.toLowerCase().includes(query.toLowerCase()));
+      if (!suggestions.length) { container.classList.remove('visible'); return; }
+      suggestions.forEach(suggestion => {
+        const item = document.createElement('div');
+        item.className = 'autocomplete-item';
+        item.textContent = suggestion;
+        item.addEventListener('click', () => {
+          document.getElementById('search').value = suggestion;
+          container.innerHTML = '';
+          container.classList.remove('visible');
+          filterNetwork(suggestion.toLowerCase());
+        });
+        container.appendChild(item);
+      });
+      container.classList.add('visible');
+    }
+    
+    window.addEventListener('click', function(e) {
+      if (!document.getElementById('search-container').contains(e.target)) {
+        document.getElementById('autocomplete-container').classList.remove('visible');
+      }
+    });
+    
+    function filterNetwork(searchTerm) {
+      const found = originalNodes.find(n => n.label.toLowerCase() === searchTerm);
+      if (!found) return;
+      searchActive = true;
+      const connectedBands = new Set([found.id]);
+      const connectedEdges = originalEdges.filter(edge => {
+        if (edge.from === found.id) { connectedBands.add(edge.to); return true; }
+        if (edge.to === found.id) { connectedBands.add(edge.from); return true; }
+        return false;
+      });
+      allNodes = originalNodes.filter(n => connectedBands.has(n.id));
+      allEdges = connectedEdges;
+      allNodes.forEach(node => { if (!node.label) node.label = node.id; });
+      network.setData({
+        nodes: new vis.DataSet(allNodes),
+        edges: new vis.DataSet(allEdges)
+      });
+      network.setOptions({
+        physics: {
+          enabled: true,
+          stabilization: { enabled: true, iterations: 500 },
+          barnesHut: { gravitationalConstant: -8000, springLength: 350, avoidOverlap: 1 }
+        }
+      });
+      network.fit({ nodes: allNodes.map(n => n.id), animation: { duration: 1000 } });
+    
+      // Sidebar with details for the searched band ***
+      let detailsHTML = `<h3>${found.label}</h3>`;
+      detailsHTML += `<p>Performed at Gilman ${showCounts[found.id] || 0} ${showCounts[found.id] == 1 ? "show" : "time(s) between 1986 and 1995"}</p>`;
+      let connections = originalEdges.filter(edge => edge.from === found.id || edge.to === found.id);
+      if (connections.length > 0) {
+        detailsHTML += `<h4>Played:</h4><ul>`;
+        connections.forEach(edge => {
+          let other = (edge.from === found.id ? edge.to : edge.from);
+          detailsHTML += `<li>${edge.weight} ${edge.weight === 1 ? "show" : "shows"} with ${other}</li>`;
+        });
+        detailsHTML += `</ul>`;
+      } else {
+        detailsHTML += `<p>No connections found.</p>`;
+      }
+      const sidebar = document.getElementById('details-sidebar');
+      sidebar.innerHTML = `<button id="sidebar-close" onclick="closeSidebar()">✕</button>` + detailsHTML;
+      // On mobile, show the sidebar overlay
+      if (window.innerWidth < 600) {
+        sidebar.style.display = 'block';
+      }
+    }
+    
+    function resetNetwork() {
+      searchActive = false;
+      allNodes = [...originalNodes];
+      allEdges = [...originalEdges];
+      document.getElementById('search').value = '';
+      document.getElementById('autocomplete-container').classList.remove('visible');
+      if (network) {
+        network.setData({
+          nodes: new vis.DataSet(allNodes),
+          edges: new vis.DataSet(allEdges)
+        });
+        network.setOptions({ physics: false });
+        if (initialView && initialScale) {
+          network.moveTo({ position: initialView, scale: initialScale, animation: false });
+        }
+        if (originalNodes.length > 1000) { clusterGeneralView(); }
+      }
+      document.getElementById('details-sidebar').innerHTML = '';
+    }
+    
+    function clusterGeneralView() {
+      network.clusterByHubsize(3, {
+        processProperties: function (clusterOptions, childNodes) {
+          clusterOptions.label = "Cluster (" + childNodes.length + ")";
+          return clusterOptions;
+        },
+        clusterNodeProperties: {
+          shape: 'dot',
+          color: '#97C2FC',
+          font: { size: 16, color: '#000000', face: 'Arial' }
+        }
+      });
+    }
+    
+    function openHelp() { document.getElementById('helpOverlay').style.display = 'flex'; }
+    function closeHelp() { document.getElementById('helpOverlay').style.display = 'none'; }
+    
+    function exportPNG() {
+      const canvas = document.querySelector('#network-container canvas');
+      if (canvas) {
+        const imgData = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.href = imgData;
+        link.download = 'band-network.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        alert("Export failed: Unable to locate the network canvas.");
+      }
+    }
+    
+    init();
+  </script>
+</body>
+</html>
