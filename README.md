@@ -26,13 +26,13 @@ A suite of web applications to visualize various elements of the East Bay punk s
 
 This project comprises a set of interconnected web applications that together provide a set of visualization of the East Bay punk scene. 
 
-- **People** is An interactive network graph showing bands and individual members along with their connections.
-- **Places:** A mapping interface that uses an embedded ArcGIS map to visualize key locations (venues, event sites) tied to the scene.
-- **Words:** A dynamic visualization of lyrics from Lookout Records releases, featuring a word cloud, association networks, and a missing lyrics interface.
+- **People:** An interactive network graph showing bands and individual members along with their connections.
+- **Places:** An interactive map that visualize key locations tied to the scene.
+- **Words:** A  visualization of lyrics from Lookout Records releases, featuring a word cloud, association networks, and a randomizer.
 - **Shows:** A searchable, filterable historical database of punk events in the Bay Area, displayed in a responsive table with pagination.
 - **Gilman:** An interactive network graph specifically focused on bands that performed at the Gilman Street Project, with node sizes and edge thicknesses representing performance frequency and shared shows.
 
-The suite is built using modern web technologies (HTML5, CSS3, JavaScript, D3.js, vis-network, and PHP for backend APIs) and is designed to be easily repurposed for different scenes by updating the data and customizing visual parameters.
+The suite is built using HTML5, CSS3, JavaScript, D3.js, vis-network, and PHP for backend APIs and is designed to be easily repurposed for different scenes by updating the data and customizing visual parameters.
 
 ---
 
@@ -70,7 +70,7 @@ vebp/
 
 ### Requirements
 
-- A modern web browser with JavaScript enabled.
+- A web browser with JavaScript enabled.
 - A web server capable of serving static files (Apache, Nginx, or a local development server such as Python’s HTTP server).
 - PHP (if you wish to run the backend APIs).
 
