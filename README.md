@@ -155,7 +155,7 @@ vebp/
   A searchable and filterable historical database of punk events in the Bay Area (1976–1995), displayed in a responsive table.
 - **Key Files:**  
   - `shows.html` – Contains the filters, table, and pagination controls.
-  - `WILLUPDATEevents.json` – JSON file with event data.
+  - `events.json` – JSON file with event data.
 
 ### Gilman
 
@@ -258,7 +258,7 @@ This suite is designed to be modular and adaptable. To repurpose it for another 
     }
     ```
 
-#### Shows: `events.json` (or `WILLUPDATEevents.json`)
+#### Shows: `events.json` 
 - **Structure:**  
   A JSON array where each element is an event object with fields such as:
   - `Date`: Date of the event (formatted as YYYY-MM-DD).
