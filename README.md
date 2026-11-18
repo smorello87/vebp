@@ -138,14 +138,14 @@ that switch with the mode. Animated layouts are pre-settled when the visitor pre
 ### Places
 
 - **Description:**  
-  A mapping interface that uses an ArcGIS embedded component to display key scene locations (venues, event sites).
+  An interactive Leaflet map of key scene locations (venues, punk houses, record stores, studios and more), with category filters, search, and a keyboard-accessible list of every place shown.
 - **Key Files:**  
-  - `places.html` – The primary file containing the map.
-  - `locations_latlong_split.csv` – Dataset with latitude and longitude information.
+  - `places.html` – The map page.
+  - `data/locations.csv` – Dataset with names, categories and latitude/longitude.
+  - `shared/img/map-icons/` – Category icons.
 - **Usage:**  
   - Update the CSV file with new location data if repurposing for another scene.
-  - Create a Public Account on ArcGIS, upload the CSV as a new layer, and update the embed link in places.html accordingly.
-  - Adjust the embedded map’s settings (via HTML attributes or JavaScript) as needed.
+  - The basemap tiles are loaded from a tile provider configured in `places.html`; use your own key if you fork the project.
 
 ### Words
 
