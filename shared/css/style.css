@@ -1,0 +1,667 @@
+/*!
+ * VEBP layer — loads after shared/core/ebp-core.css (synced copy of core/; never edit that copy).
+ * Uses only --ebp-* tokens. The chart tokens below (--ebp-viz-*) are the single place where
+ * visualisation colours are defined; page scripts read them through VEBP.palette() and
+ * SVG charts use them directly via CSS classes, so both modes switch without reloading.
+ * No glass, blur, glow or translucent text.
+ */
+
+/* ==========================================================================
+   1. Chart tokens (light, dark, and the two no-JS dark copies — keep in step)
+   Categorical hues follow an Okabe–Ito-style set; every hue is ≥ 4.3:1 against
+   --ebp-bg / --ebp-surface in its mode. Hue is never the only cue: nodes also
+   differ by shape and every category carries a text label.
+   ========================================================================== */
+/* @vebp-tokens light */
+:root,
+[data-theme="light"] {
+  --ebp-viz-1: #b8431a;
+  --ebp-viz-2: #1b6aa8;
+  --ebp-viz-3: #007a5a;
+  --ebp-viz-4: #7a6500;
+  --ebp-viz-5: #a13d7b;
+  --ebp-viz-6: #9a5800;
+  --ebp-viz-7: #3d4cb8;
+  --ebp-viz-8: #665f56;
+  --ebp-viz-band: #c8102e;
+  --ebp-viz-member: #1b6aa8;
+  --ebp-viz-edge: #4a4540;
+  --ebp-viz-edge-cross: #6f685e;
+  --ebp-viz-path: #161412;
+  --ebp-viz-selected: #c8102e;
+  --ebp-viz-neighbor: #1b6aa8;
+  --ebp-viz-dim: #b9b1a4;
+  --ebp-viz-label: #4a4540;
+  --ebp-viz-halo: #f7f4ee;
+  --ebp-viz-marker-fill: #ffffff;
+  --ebp-viz-scrim: rgba(22, 20, 18, 0.62);
+}
+/* @end */
+
+/* @vebp-tokens dark */
+[data-theme="dark"] {
+  --ebp-viz-1: #ff8f66;
+  --ebp-viz-2: #56b4e9;
+  --ebp-viz-3: #2ec4a0;
+  --ebp-viz-4: #f0e442;
+  --ebp-viz-5: #e38cc4;
+  --ebp-viz-6: #f5a524;
+  --ebp-viz-7: #8fa3ff;
+  --ebp-viz-8: #bdb6ab;
+  --ebp-viz-band: #ff5a66;
+  --ebp-viz-member: #56b4e9;
+  --ebp-viz-edge: #b8b1a6;
+  --ebp-viz-edge-cross: #8a8378;
+  --ebp-viz-path: #b6f000;
+  --ebp-viz-selected: #ff5a66;
+  --ebp-viz-neighbor: #56b4e9;
+  --ebp-viz-dim: #4a453f;
+  --ebp-viz-label: #b8b1a6;
+  --ebp-viz-halo: #0e0d0c;
+  --ebp-viz-marker-fill: #ffffff;
+  --ebp-viz-scrim: rgba(0, 0, 0, 0.78);
+}
+/* @end */
+
+/* @vebp-tokens dark-copy (no JS yet; VEBP pages default to dark) */
+:root:not([data-theme])[data-default-theme="dark"] {
+  --ebp-viz-1: #ff8f66;
+  --ebp-viz-2: #56b4e9;
+  --ebp-viz-3: #2ec4a0;
+  --ebp-viz-4: #f0e442;
+  --ebp-viz-5: #e38cc4;
+  --ebp-viz-6: #f5a524;
+  --ebp-viz-7: #8fa3ff;
+  --ebp-viz-8: #bdb6ab;
+  --ebp-viz-band: #ff5a66;
+  --ebp-viz-member: #56b4e9;
+  --ebp-viz-edge: #b8b1a6;
+  --ebp-viz-edge-cross: #8a8378;
+  --ebp-viz-path: #b6f000;
+  --ebp-viz-selected: #ff5a66;
+  --ebp-viz-neighbor: #56b4e9;
+  --ebp-viz-dim: #4a453f;
+  --ebp-viz-label: #b8b1a6;
+  --ebp-viz-halo: #0e0d0c;
+  --ebp-viz-marker-fill: #ffffff;
+  --ebp-viz-scrim: rgba(0, 0, 0, 0.78);
+}
+/* @end */
+
+@media (prefers-color-scheme: dark) {
+  /* @vebp-tokens dark-copy */
+  :root:not([data-theme]) {
+    --ebp-viz-1: #ff8f66;
+    --ebp-viz-2: #56b4e9;
+    --ebp-viz-3: #2ec4a0;
+    --ebp-viz-4: #f0e442;
+    --ebp-viz-5: #e38cc4;
+    --ebp-viz-6: #f5a524;
+    --ebp-viz-7: #8fa3ff;
+    --ebp-viz-8: #bdb6ab;
+    --ebp-viz-band: #ff5a66;
+    --ebp-viz-member: #56b4e9;
+    --ebp-viz-edge: #b8b1a6;
+    --ebp-viz-edge-cross: #8a8378;
+    --ebp-viz-path: #b6f000;
+    --ebp-viz-selected: #ff5a66;
+    --ebp-viz-neighbor: #56b4e9;
+    --ebp-viz-dim: #4a453f;
+    --ebp-viz-label: #b8b1a6;
+    --ebp-viz-halo: #0e0d0c;
+    --ebp-viz-marker-fill: #ffffff;
+    --ebp-viz-scrim: rgba(0, 0, 0, 0.78);
+  }
+  /* @end */
+}
+
+/* Layout values (not colours). */
+:root {
+  --vebp-side-w: clamp(17rem, 24vw, 22rem);
+  --vebp-header-h: 10.75rem;
+}
+
+/* ==========================================================================
+   2. Shared header / footer slots (components.js)
+   Height is reserved before the header is fetched so content does not jump.
+   ========================================================================== */
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100svh;
+}
+body > main { flex: 1 0 auto; width: 100%; }
+/* Reserved heights match the measured header (bar + subnav) at each width band
+   (core header as of 2026-11-18). Re-measure if the core header changes. */
+.vebp-header-slot { min-height: 10.75rem; }
+@media (max-width: 81.999rem) { .vebp-header-slot { min-height: 9.5rem; } }
+@media (max-width: 58rem)     { .vebp-header-slot { min-height: 12.75rem; } }
+@media (max-width: 47.999rem) { .vebp-header-slot { min-height: 12.25rem; } }
+@media (max-width: 29.999rem) { .vebp-header-slot { min-height: 11.5rem; } }
+@media (max-width: 22.06rem)  { .vebp-header-slot { min-height: 14.25rem; } }
+.vebp-header-slot.is-loaded { min-height: 0; }
+.vebp-footer-slot { min-height: 1px; }
+
+/* ==========================================================================
+   3. Document pages (index, shows, words, missing lyrics)
+   ========================================================================== */
+.vebp-main {
+  width: 100%;
+  max-width: var(--ebp-max);
+  margin-inline: auto;
+  padding: var(--ebp-s-6) var(--ebp-gutter) 0;
+}
+.vebp-main--narrow { max-width: calc(52rem + 2 * var(--ebp-gutter)); }
+.vebp-main--mid { max-width: calc(66rem + 2 * var(--ebp-gutter)); }
+
+.vebp-page-head { margin-bottom: var(--ebp-s-5); }
+.vebp-page-head h1 { margin-bottom: var(--ebp-s-3); }
+.vebp-page-head p { max-width: var(--ebp-measure); }
+
+/* Home */
+.vebp-hero .ebp-hero__title { color: var(--ebp-ink); }
+.vebp-hero .ebp-hero__title span { color: var(--ebp-accent); }
+.vebp-tool-grid { --ebp-grid-min: 16rem; margin-top: 0; }
+.vebp-hero { margin-bottom: var(--ebp-s-6); }
+.vebp-tool-card .ebp-card__body { padding: var(--ebp-s-5); gap: var(--ebp-s-3); }
+.vebp-tool-card .ebp-card__title {
+  font-family: var(--ebp-font-display);
+  font-weight: 400;
+  font-size: 2.25rem;
+  line-height: 0.95;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+.vebp-tool-card p { margin: 0; color: var(--ebp-ink-2); }
+.vebp-tool-card { border-left-width: var(--ebp-rule-heavy); }
+.vebp-tool-card:hover,
+.vebp-tool-card:focus-within { border-left-color: var(--ebp-accent); }
+
+/* Panels that used to be "glass cards" */
+.vebp-panel {
+  background-color: var(--ebp-surface);
+  color: var(--ebp-ink);
+  border: var(--ebp-rule) solid var(--ebp-ink);
+  border-radius: var(--ebp-radius);
+  padding: var(--ebp-s-5);
+  margin-bottom: var(--ebp-s-5);
+}
+.vebp-panel > :last-child { margin-bottom: 0; }
+
+/* Live result counts */
+.vebp-status {
+  margin: 0 0 var(--ebp-s-3);
+  font-family: var(--ebp-font-mono);
+  font-size: var(--ebp-text-xs);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--ebp-ink);
+}
+.vebp-status:empty { display: none; }
+
+/* "About this visualization" blocks */
+.vebp-summary { max-width: var(--ebp-measure); }
+.vebp-summary p,
+.vebp-summary li { color: var(--ebp-ink); }
+.vebp-howto { margin: 0 0 var(--ebp-s-4); border-top: 1px solid var(--ebp-border); }
+.vebp-howto > summary {
+  display: flex;
+  align-items: baseline;
+  padding-block: var(--ebp-s-2);
+  min-height: var(--ebp-target);
+  cursor: pointer;
+  font-family: var(--ebp-font-mono);
+  font-size: var(--ebp-text-xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.vebp-howto > summary::-webkit-details-marker { display: none; }
+.vebp-howto > summary::before {
+  content: "+";
+  content: "+" / "";
+  display: inline-block;
+  width: 1.25em;
+  font-size: 1.1em;
+}
+.vebp-howto[open] > summary::before { content: "\2212"; content: "\2212" / ""; }
+.vebp-howto > summary:hover { color: var(--ebp-accent); }
+.vebp-howto ul { padding-left: 1.2em; margin: 0 0 var(--ebp-s-3); }
+.vebp-howto li + li { margin-top: var(--ebp-s-1); }
+
+/* Small mono subheads inside panels */
+.vebp-panel-h {
+  margin: var(--ebp-s-5) 0 var(--ebp-s-2);
+  font-family: var(--ebp-font-mono);
+  font-size: var(--ebp-text-xs);
+  font-weight: 500;
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ebp-ink);
+  padding-top: var(--ebp-s-3);
+  border-top: var(--ebp-rule) solid var(--ebp-ink);
+}
+
+.vebp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ebp-s-2);
+  margin: 0 0 var(--ebp-s-3);
+}
+.vebp-actions--stack > .ebp-btn { flex: 1 1 10rem; }
+
+.loading { color: var(--ebp-ink-2); font-style: italic; }
+
+/* ==========================================================================
+   4. Full-height visualisation layout (people, places, gilman)
+   Side panel (intro + controls) beside a canvas that fills the viewport
+   under the header. Below 48rem the panel stacks above the canvas and the
+   tools collapse behind a button.
+   ========================================================================== */
+.vebp-app .ebp-footer { margin-top: 0; }
+.vebp-app__main {
+  display: grid;
+  grid-template-columns: var(--vebp-side-w) minmax(0, 1fr);
+  height: calc(100vh - var(--vebp-header-h));
+  height: calc(100svh - var(--vebp-header-h));
+  min-height: 30rem;
+}
+.vebp-side {
+  min-width: 0;
+  overflow-y: auto;
+  padding: var(--ebp-s-5) var(--ebp-s-4) var(--ebp-s-6);
+  background-color: var(--ebp-surface);
+  border-right: var(--ebp-rule) solid var(--ebp-ink);
+  font-size: var(--ebp-text-sm);
+}
+.vebp-side h1 {
+  font-size: clamp(2.5rem, 2rem + 2vw, 3.5rem);
+  margin-bottom: var(--ebp-s-3);
+}
+.vebp-side p { margin-bottom: var(--ebp-s-3); }
+.vebp-side .ebp-field { margin-bottom: var(--ebp-s-3); }
+.vebp-side .ebp-btn { width: 100%; }
+.vebp-side .vebp-actions .ebp-btn { width: auto; flex: 1 1 8rem; }
+.vebp-stage {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  background-color: var(--ebp-bg);
+  overflow: hidden;
+}
+.vebp-stage > svg,
+.vebp-stage > .vebp-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.vebp-stage__message {
+  position: absolute;
+  inset: auto var(--ebp-s-4) var(--ebp-s-4) var(--ebp-s-4);
+  z-index: 500;
+  max-width: 36rem;
+  margin: 0 auto;
+}
+
+.vebp-toggle { display: none; }
+
+@media (max-width: 47.999rem) {
+  .vebp-app__main {
+    display: block;
+    height: auto;
+    min-height: 0;
+  }
+  .vebp-side {
+    overflow: visible;
+    border-right: 0;
+    border-bottom: var(--ebp-rule) solid var(--ebp-ink);
+    padding: var(--ebp-s-4) var(--ebp-gutter);
+  }
+  .vebp-stage {
+    height: 72vh;
+    height: 72svh;
+    min-height: 22rem;
+  }
+  .ebp-js .vebp-toggle { display: inline-flex; width: 100%; margin-bottom: var(--ebp-s-3); }
+  .ebp-js .vebp-collapsible:not(.is-open) { display: none; }
+  .vebp-toggle[aria-expanded="true"] {
+    background-color: var(--ebp-ink);
+    color: var(--ebp-bg);
+  }
+}
+
+/* ==========================================================================
+   5. Combobox / autocomplete
+   ========================================================================== */
+.vebp-combo { position: relative; }
+.autocomplete-container {
+  position: absolute;
+  z-index: 1100;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 16rem;
+  overflow-y: auto;
+  margin: -2px 0 0;
+  padding: 0;
+  list-style: none;
+  background-color: var(--ebp-surface);
+  color: var(--ebp-ink);
+  border: var(--ebp-rule) solid var(--ebp-ink);
+  border-radius: 0 0 var(--ebp-radius) var(--ebp-radius);
+  box-shadow: var(--ebp-shadow);
+}
+.autocomplete-item {
+  display: flex;
+  align-items: center;
+  min-height: var(--ebp-target);
+  padding: var(--ebp-s-2) var(--ebp-s-3);
+  font-size: var(--ebp-text-sm);
+  line-height: 1.3;
+  color: var(--ebp-ink);
+  border-bottom: 1px solid var(--ebp-border);
+  cursor: pointer;
+}
+.autocomplete-item:last-child { border-bottom: 0; }
+.autocomplete-item:hover { background-color: var(--ebp-surface-2); }
+.autocomplete-item.is-active,
+.autocomplete-item[aria-selected="true"] {
+  background-color: var(--ebp-ink);
+  color: var(--ebp-bg);
+}
+
+/* Inputs outside .ebp-field (keep every control on the shared look) */
+.vebp-input,
+.vebp-range {
+  accent-color: var(--ebp-accent);
+}
+.vebp-range-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ebp-s-3);
+}
+.vebp-range-row input[type="range"] {
+  flex: 1;
+  min-height: var(--ebp-target);
+  margin: 0;
+  accent-color: var(--ebp-accent);
+}
+.vebp-range-row output {
+  min-width: 2.5ch;
+  font-family: var(--ebp-font-mono);
+  font-weight: 500;
+  text-align: right;
+}
+
+/* ==========================================================================
+   6. Dialogs (help overlays are native <dialog> elements)
+   ========================================================================== */
+dialog.help-overlay {
+  width: min(36rem, calc(100vw - 2 * var(--ebp-s-4)));
+  max-height: min(85vh, 48rem);
+  margin: auto;
+  padding: 0;
+  background-color: var(--ebp-surface);
+  color: var(--ebp-ink);
+  border: var(--ebp-rule) solid var(--ebp-ink);
+  border-radius: var(--ebp-radius);
+  box-shadow: 6px 6px 0 var(--ebp-ink);
+}
+dialog.help-overlay::backdrop { background-color: var(--ebp-viz-scrim); }
+.help-content {
+  position: relative;
+  padding: var(--ebp-s-5) var(--ebp-s-5) var(--ebp-s-5);
+}
+.help-content h2 {
+  margin: 0 3.5rem var(--ebp-s-4) 0;
+  font-size: var(--ebp-text-h2);
+}
+.help-content ul { padding-left: 1.2em; }
+.help-content li + li { margin-top: var(--ebp-s-1); }
+.help-close {
+  position: absolute;
+  top: var(--ebp-s-3);
+  right: var(--ebp-s-3);
+}
+
+/* ==========================================================================
+   7. Tooltips (pointer hover extras; never the only way to get the info)
+   ========================================================================== */
+.tooltip,
+.network-tooltip,
+.word-tooltip {
+  position: absolute;
+  z-index: 2000;
+  max-width: 20rem;
+  padding: var(--ebp-s-1) var(--ebp-s-2);
+  background-color: var(--ebp-ink);
+  color: var(--ebp-bg);
+  border-radius: var(--ebp-radius);
+  font-family: var(--ebp-font-mono);
+  font-size: var(--ebp-text-xs);
+  line-height: 1.4;
+  pointer-events: none;
+}
+.network-tooltip { position: fixed; z-index: 3000; }
+
+/* ==========================================================================
+   8. Legends + shape swatches
+   ========================================================================== */
+.vebp-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ebp-s-1) var(--ebp-s-4);
+  margin: 0 0 var(--ebp-s-3);
+  padding: 0;
+  list-style: none;
+  font-size: var(--ebp-text-sm);
+}
+.vebp-legend--list { flex-direction: column; }
+.vebp-legend li {
+  display: flex;
+  align-items: center;
+  gap: var(--ebp-s-2);
+  margin: 0;
+}
+.vebp-swatch {
+  flex: none;
+  display: inline-block;
+  width: 0.95rem;
+  height: 0.95rem;
+  background-color: var(--swatch, var(--ebp-ink));
+  border: 1px solid var(--ebp-ink);
+}
+.vebp-swatch--dot,
+.vebp-swatch--circle { border-radius: 50%; }
+.vebp-swatch--square { border-radius: 1px; }
+.vebp-swatch--diamond { transform: rotate(45deg) scale(0.82); }
+.vebp-swatch--triangle { border: 0; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.vebp-swatch--triangleDown { border: 0; clip-path: polygon(0 0, 100% 0, 50% 100%); }
+.vebp-swatch--star { border: 0; clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+.vebp-swatch--hexagon { border: 0; clip-path: polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0 50%); }
+.vebp-swatch--ring { background: transparent; border: 3px solid var(--swatch); border-radius: 50%; }
+.vebp-swatch--line { height: 0.25rem; width: 1.25rem; border: 0; }
+
+/* ==========================================================================
+   9. SVG chart marks (people + words). Colours come from tokens, so a theme
+   switch recolours them with no re-render.
+   ========================================================================== */
+.vebp-chart .link {
+  stroke: var(--ebp-viz-edge);
+  stroke-opacity: 0.3;
+}
+.vebp-chart .node-shape { stroke: var(--ebp-viz-halo); stroke-width: 1.5px; }
+.vebp-chart .node-shape--band { fill: var(--ebp-viz-band); }
+.vebp-chart .node-shape--member { fill: var(--ebp-viz-member); }
+.vebp-chart .label {
+  font-family: var(--ebp-font-mono);
+  font-size: 11px;
+  fill: var(--ebp-viz-label);
+  paint-order: stroke;
+  stroke: var(--ebp-viz-halo);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.vebp-chart .highlight-path {
+  stroke: var(--ebp-viz-path) !important;
+  stroke-width: 4px !important;
+  stroke-opacity: 1 !important;
+}
+.vebp-chart .highlight-node {
+  stroke: var(--ebp-viz-path) !important;
+  stroke-width: 4px !important;
+}
+.vebp-chart .node.is-match .node-shape { stroke: var(--ebp-ink); stroke-width: 3px; }
+
+/* Word clouds: words cycle through the categorical hues; first word = accent */
+.cloud-word { cursor: pointer; }
+.cloud-word--0 { fill: var(--ebp-viz-band); }
+.cloud-word--1 { fill: var(--ebp-viz-1); }
+.cloud-word--2 { fill: var(--ebp-viz-2); }
+.cloud-word--3 { fill: var(--ebp-viz-3); }
+.cloud-word--4 { fill: var(--ebp-viz-4); }
+.cloud-word--5 { fill: var(--ebp-viz-5); }
+.cloud-word--6 { fill: var(--ebp-viz-6); }
+.cloud-word--7 { fill: var(--ebp-viz-7); }
+.cloud-word--8 { fill: var(--ebp-viz-8); }
+.cloud-word:hover { text-decoration: underline; }
+
+.assoc-link { stroke: var(--ebp-viz-edge); stroke-opacity: 0.45; }
+.assoc-node { fill: var(--ebp-viz-member); cursor: pointer; }
+.assoc-node--center { fill: var(--ebp-viz-band); }
+.assoc-node:hover { stroke: var(--ebp-ink); stroke-width: 2px; }
+.assoc-label {
+  font-family: var(--ebp-font-mono);
+  font-size: 11px;
+  fill: var(--ebp-viz-label);
+  paint-order: stroke;
+  stroke: var(--ebp-viz-halo);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+.assoc-label--center { font-size: 14px; font-weight: 500; fill: var(--ebp-ink); }
+
+/* ==========================================================================
+   10. Leaflet (places) — controls, popups and attribution on tokens
+   ========================================================================== */
+.leaflet-container {
+  font-family: var(--ebp-font-body);
+  background-color: var(--ebp-surface-2);
+}
+.leaflet-container a { color: var(--ebp-accent); }
+.leaflet-bar {
+  border: var(--ebp-rule) solid var(--ebp-ink) !important;
+  border-radius: var(--ebp-radius) !important;
+  box-shadow: var(--ebp-shadow-sm) !important;
+}
+.leaflet-bar a,
+.leaflet-bar a:hover {
+  width: var(--ebp-target) !important;
+  height: var(--ebp-target) !important;
+  line-height: var(--ebp-target) !important;
+  background-color: var(--ebp-surface) !important;
+  color: var(--ebp-ink) !important;
+  border-bottom-color: var(--ebp-ink) !important;
+  font-size: 1.25rem !important;
+}
+.leaflet-bar a:hover { background-color: var(--ebp-surface-2) !important; }
+.leaflet-bar a.leaflet-disabled { color: var(--ebp-ink-2) !important; background-color: var(--ebp-surface-2) !important; }
+.leaflet-control-attribution {
+  background-color: var(--ebp-surface) !important;
+  color: var(--ebp-ink) !important;
+  font-family: var(--ebp-font-mono);
+  font-size: 0.75rem !important;
+  padding: 2px var(--ebp-s-2) !important;
+}
+.leaflet-control-attribution a { color: var(--ebp-accent) !important; }
+.leaflet-popup-content-wrapper {
+  background-color: var(--ebp-surface);
+  color: var(--ebp-ink);
+  border: var(--ebp-rule) solid var(--ebp-ink);
+  border-radius: var(--ebp-radius);
+  box-shadow: var(--ebp-shadow);
+}
+.leaflet-popup-tip {
+  background-color: var(--ebp-surface);
+  border: var(--ebp-rule) solid var(--ebp-ink);
+  box-shadow: none;
+}
+.leaflet-popup-content {
+  margin: var(--ebp-s-4) var(--ebp-s-6) var(--ebp-s-4) var(--ebp-s-4);
+  font-size: var(--ebp-text-sm);
+  line-height: 1.45;
+}
+.leaflet-container a.leaflet-popup-close-button {
+  width: var(--ebp-target);
+  height: var(--ebp-target);
+  font: 1.5rem/var(--ebp-target) var(--ebp-font-body);
+  color: var(--ebp-ink);
+  text-align: center;
+}
+.leaflet-container a.leaflet-popup-close-button:hover { color: var(--ebp-accent); }
+.popup-name {
+  margin: 0 0 var(--ebp-s-1);
+  font-family: var(--ebp-font-display);
+  font-size: 1.5rem;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--ebp-ink);
+}
+.popup-address { margin: 0 0 var(--ebp-s-2); color: var(--ebp-ink-2); }
+.popup-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ebp-s-1);
+  padding: 0.1rem var(--ebp-s-2);
+  font-family: var(--ebp-font-mono);
+  font-size: var(--ebp-text-xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ebp-ink);
+  background-color: var(--ebp-surface-2);
+  border: 1px solid var(--ebp-border-strong);
+  border-left: 0.4rem solid var(--category-color, var(--ebp-accent));
+  border-radius: var(--ebp-radius);
+}
+.map-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background-color: var(--ebp-viz-marker-fill);
+  border: 3px solid var(--marker-color, var(--ebp-viz-band));
+  box-shadow: 0 0 0 2px var(--ebp-viz-halo);
+}
+.map-marker img { width: 22px; height: 22px; }
+.leaflet-marker-icon:focus-visible { outline: none; box-shadow: none; }
+.leaflet-marker-icon:focus-visible .map-marker {
+  outline: 3px solid var(--ebp-focus);
+  outline-offset: 2px;
+  box-shadow: var(--ebp-focus-ring);
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .map-marker { transition: transform var(--ebp-ease); }
+  .leaflet-marker-icon:hover .map-marker { transform: scale(1.12); }
+}
+
+/* ==========================================================================
+   11. Preferences
+   ========================================================================== */
+@media (prefers-contrast: more) {
+  .vebp-chart .link { stroke-opacity: 0.6; }
+  .assoc-link { stroke-opacity: 0.8; }
+}
+@media (forced-colors: active) {
+  .autocomplete-item.is-active,
+  .autocomplete-item[aria-selected="true"] { forced-color-adjust: none; background: Highlight; color: HighlightText; }
+  .vebp-swatch { forced-color-adjust: none; }
+  dialog.help-overlay { border-color: CanvasText; }
+}

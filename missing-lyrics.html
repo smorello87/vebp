@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en" data-default-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Missing Lyrics – VEBP</title>
+  <meta name="color-scheme" content="light dark">
+  <script>(function(d){var r=d.documentElement,t;try{t=localStorage.getItem("ebp-theme")}catch(e){}if(t!=="light"&&t!=="dark"){t=r.getAttribute("data-default-theme")==="dark"?"dark":"light"}r.setAttribute("data-theme",t);r.classList.add("ebp-js")})(document);</script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-9QR1ELFD27"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-9QR1ELFD27');
+  </script>
+  <link rel="stylesheet" href="shared/core/ebp-core.css">
+  <link rel="stylesheet" href="shared/css/style.css">
+  <style>
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: var(--ebp-target);
+      margin-bottom: var(--ebp-s-4);
+      font-family: var(--ebp-font-mono);
+      font-size: var(--ebp-text-sm);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .lyrics-section {
+      margin-bottom: var(--ebp-s-5);
+      padding-bottom: var(--ebp-s-4);
+      border-bottom: var(--ebp-rule) solid var(--ebp-ink);
+    }
+    .lyrics-section h2 {
+      margin: 0 0 var(--ebp-s-3);
+      font-family: var(--ebp-font-body);
+      font-weight: 700;
+      font-size: var(--ebp-text-h3);
+      line-height: 1.25;
+      text-transform: none;
+    }
+    .lyrics-section ul { list-style: none; padding: 0; margin: 0; }
+    .lyrics-section li {
+      padding: var(--ebp-s-2) 0;
+      font-size: var(--ebp-text-sm);
+      border-bottom: 1px solid var(--ebp-border);
+    }
+    .lyrics-section li:last-child { border-bottom: none; }
+  </style>
+</head>
+<body>
+  <a class="ebp-skip" href="#content">Skip to main content</a>
+  <div id="nav-placeholder" class="vebp-header-slot"><noscript>
+<header class="ebp-header">
+  <div class="ebp-header__bar">
+    <a class="ebp-brand" href="https://eastbaypunkda.com/"><img class="ebp-brand__logo" src="shared/core/img/logo.png" alt="" width="60" height="40"><span class="ebp-brand__name">East Bay Punk <span>Digital Archive</span></span></a>
+    <nav id="ebp-nav" class="ebp-nav" aria-label="Main">
+      <ul class="ebp-nav__list">
+        <li><a href="https://eastbaypunkda.com/s/east-bay-punk-digital-archive/item-set">Collections</a></li>
+        <li><a href="https://eastbaypunkda.com/s/east-bay-punk-digital-archive/item">Items</a></li>
+        <li><a href="https://eastbaypunkda.com/vebp/" aria-current="true">VEBP</a></li>
+        <li><a href="https://eastbaypunkda.com/toolkit/">Toolkit</a></li>
+        <li><a href="https://eastbaypunkda.com/s/east-bay-punk-digital-archive/page/ethics">Ethics</a></li>
+        <li><a href="https://eastbaypunkda.com/s/east-bay-punk-digital-archive/page/about">About</a></li>
+      </ul>
+    </nav>
+  </div>
+  <nav class="ebp-subnav" aria-label="Visualizing East Bay Punk">
+    <a class="ebp-subnav__title" href="index.html">Visualizing East Bay Punk</a>
+    <ul class="ebp-subnav__list">
+      <li><a href="people.html">People</a></li>
+      <li><a href="places.html">Places</a></li>
+      <li><a href="words.html" aria-current="true">Words</a></li>
+      <li><a href="shows.html">Shows</a></li>
+      <li><a href="gilman.html">Gilman</a></li>
+    </ul>
+  </nav>
+</header>
+</noscript></div>
+
+  <main id="content" tabindex="-1" class="vebp-main vebp-main--narrow">
+    <a href="words.html" class="back-link">&larr; Back to Words</a>
+    <div class="vebp-page-head">
+      <h1 class="page-title">Missing Lyrics</h1>
+      <p class="page-subtitle">
+        If you have any of these lyrics or can provide liner note photos, please <a href="mailto:veritas44@gmail.com">get in touch with Stefano</a>.
+      </p>
+    </div>
+    <p class="vebp-status" id="lyrics-status" role="status" aria-live="polite">Loading…</p>
+    <div id="lyricsContent"></div>
+    <a href="words.html" class="back-link">&larr; Back to Words</a>
+  </main>
+
+  <div id="footer-placeholder" class="vebp-footer-slot"><noscript>
+<footer class="ebp-footer">
+  <p>The <strong>East Bay Punk Digital Archive</strong> is curated by <a href="https://stefanomorello.com">Stefano Morello</a>. Visualizing East Bay Punk &copy; 2025 Stefano Morello. <a href="https://github.com/smorello87/vebp">Source code on GitHub</a>.</p>
+</footer>
+</noscript></div>
+  <script src="shared/core/ebp-core.js"></script>
+  <script src="shared/js/vebp.js"></script>
+  <script src="shared/js/components.js"></script>
+  <script>
+    const statusEl = document.getElementById('lyrics-status');
+    fetch('data/missing_lyrics.json')
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(data => {
+        const container = document.getElementById('lyricsContent');
+        let releases = 0, tracks = 0;
+        Object.entries(data).forEach(([releaseTitle, releaseData]) => {
+          const artists = [];
+          Object.values(releaseData.tracks).forEach(track => {
+            if (track.artist && !artists.includes(track.artist)) artists.push(track.artist);
+          });
+          const artistDisplay = artists.length === 1 ? artists[0] : "Various Artists";
+
+          const section = document.createElement('section');
+          section.className = 'lyrics-section';
+
+          const h2 = document.createElement('h2');
+          h2.textContent = artistDisplay + ' – ' + releaseTitle;
+          section.appendChild(h2);
+
+          const ul = document.createElement('ul');
+          Object.entries(releaseData.tracks).forEach(([trackTitle, trackData]) => {
+            if (!trackData.lyrics || trackData.lyrics.trim() === "") {
+              const li = document.createElement('li');
+              li.textContent = artistDisplay === "Various Artists"
+                ? trackData.artist + ' – ' + trackTitle
+                : trackTitle;
+              ul.appendChild(li);
+            }
+          });
+          section.appendChild(ul);
+          if (ul.children.length > 0) { container.appendChild(section); releases++; tracks += ul.children.length; }
+        });
+        VEBP.announce(statusEl, tracks + ' tracks on ' + releases + ' releases are missing lyrics.');
+      })
+      .catch(err => {
+        console.error('Failed to load missing lyrics:', err);
+        VEBP.announce(statusEl, '');
+        const n = document.createElement('div');
+        n.className = 'ebp-notice ebp-notice--accent';
+        n.setAttribute('role', 'alert');
+        n.textContent = 'Error loading missing lyrics data.';
+        document.getElementById('lyricsContent').appendChild(n);
+      });
+  </script>
+</body>
+</html>

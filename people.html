@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en" data-default-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>People – VEBP</title>
+  <meta name="color-scheme" content="light dark">
+  <script>(function(d){var r=d.documentElement,t;try{t=localStorage.getItem("ebp-theme")}catch(e){}if(t!=="light"&&t!=="dark"){t=r.getAttribute("data-default-theme")==="dark"?"dark":"light"}r.setAttribute("data-theme",t);r.classList.add("ebp-js")})(document);</script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-9QR1ELFD27"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-9QR1ELFD27');
+  </script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://unpkg.com/canvg@3.0.7/lib/umd.js"></script>
+  <link rel="stylesheet" href="shared/core/ebp-core.css">
+  <link rel="stylesheet" href="shared/css/style.css">
+  <style>
+    #canvas { cursor: grab; touch-action: none; }
+    #canvas:active { cursor: grabbing; }
+    .vebp-zoom {
+      position: absolute;
+      top: var(--ebp-s-3);
+      right: var(--ebp-s-3);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: var(--ebp-s-1);
+    }
+    .vebp-zoom .ebp-btn { min-width: var(--ebp-target); padding: 0; }
+    .people-connections {
+      margin: 0 0 var(--ebp-s-4);
+      padding: 0;
+      list-style: none;
+      max-height: 16rem;
+      overflow-y: auto;
+      border-top: 1px solid var(--ebp-border);
+    }
+    .people-connections li { border-bottom: 1px solid var(--ebp-border); }
+    .people-connections button {
+      display: flex;
+      width: 100%;
+      min-height: var(--ebp-target);
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--ebp-s-2);
+      padding: var(--ebp-s-1) var(--ebp-s-2);
+      background: none;
+      border: 0;
+      color: var(--ebp-ink);
+      text-align: left;
+      font-size: var(--ebp-text-sm);
+    }
+    .people-connections button:hover { background-color: var(--ebp-surface-2); text-decoration: underline; }
+    .people-connections .people-type { font-family: var(--ebp-font-mono); font-size: var(--ebp-text-xs); color: var(--ebp-ink-2); text-transform: uppercase; letter-spacing: 0.06em; }
+  </style>
+</head>
+<body class="vebp-app">
+  <a class="ebp-skip" href="#content">Skip to main content</a>
+  <div id="nav-placeholder" class="vebp-header-slot"><noscript>
+<header class="ebp-header">
+  <div class="ebp-header__bar">
+    <a class="ebp-brand" href="https://eastbaypunkda.com/"><img class="ebp-brand__logo" src="shared/core/img/logo.png" alt="" width="60" height="40"><span class="ebp-brand__name">East Bay Punk <span>Digital Archive</span></span></a>
+    <nav id="ebp-nav" class="ebp-nav" aria-label="Main">
+      <ul class="ebp-nav__list">
+        <li><a href="https://eastbaypunkda.com/s/east-bay-punk-digital-archive/item-set">Collections</a></li>
+        <li><a href="https://eastbaypunkda.com/s/east-bay-punk-digital-archive/item">Items</a></li>
+        <li><a href="https://eastbaypunkda.com/vebp/" aria-current="true">VEBP</a></li>
+        <li><a href="https://eastbaypunkda.com/toolkit/">Toolkit</a></li>
+        <li><a href="https://eastbaypunkda.com/s/east-bay-punk-digital-archive/page/ethics">Ethics</a></li>
+        <li><a href="https://eastbaypunkda.com/s/east-bay-punk-digital-archive/page/about">About</a></li>
+      </ul>
+    </nav>
+  </div>
+  <nav class="ebp-subnav" aria-label="Visualizing East Bay Punk">
+    <a class="ebp-subnav__title" href="index.html">Visualizing East Bay Punk</a>
+    <ul class="ebp-subnav__list">
+      <li><a href="people.html" aria-current="page">People</a></li>
+      <li><a href="places.html">Places</a></li>
+      <li><a href="words.html">Words</a></li>
+      <li><a href="shows.html">Shows</a></li>
+      <li><a href="gilman.html">Gilman</a></li>
+    </ul>
+  </nav>
+</header>
+</noscript></div>
+
+  <main id="content" tabindex="-1" class="vebp-app__main">
+    <div class="vebp-side">
+      <h1>People</h1>
+      <div class="vebp-summary">
+        <p>
+          Each node represents a band or member from the Bay Area punk scene. Connections indicate collaborations or memberships. Data sourced from <a href="https://www.discogs.com">Discogs</a> and crowd-sourced. Missing someone? <a href="mailto:veritas44@gmail.com">Get in touch</a>!
+        </p>
+        <ul class="vebp-legend" aria-label="Legend">
+          <li><span class="vebp-swatch vebp-swatch--circle" style="--swatch: var(--ebp-viz-band)"></span> Band (circle)</li>
+          <li><span class="vebp-swatch vebp-swatch--diamond" style="--swatch: var(--ebp-viz-member)"></span> Member (diamond)</li>
+          <li><span class="vebp-swatch vebp-swatch--line" style="--swatch: var(--ebp-viz-edge)"></span> Connection</li>
+        </ul>
+        <details class="vebp-howto">
+          <summary>How to use this visualization</summary>
+          <ul>
+            <li>Search for a band or member: matches and their direct connections stay highlighted, the view zooms to them, and the connections are listed as text below the search box.</li>
+            <li>Path finder: enter two names to highlight every shortest chain of connections between them.</li>
+            <li>Filter by connections fades nodes with fewer connections than the slider value.</li>
+            <li>Drag the background to pan, scroll or pinch to zoom, or use the zoom buttons. Drag a node to move it.</li>
+          </ul>
+        </details>
+      </div>
+
+      <button type="button" class="ebp-btn vebp-toggle" id="tools-toggle" aria-expanded="false"><span class="vebp-toggle__label">Show tools</span></button>
+      <div id="people-tools" class="vebp-collapsible">
+        <h2 class="vebp-panel-h" id="search-h">Search</h2>
+        <div class="ebp-field vebp-combo">
+          <label for="search">Find a band or member</label>
+          <input type="text" id="search" placeholder="e.g. Operation Ivy">
+        </div>
+        <p class="vebp-status" id="search-status" role="status" aria-live="polite"></p>
+        <div id="search-results"></div>
+        <div class="vebp-actions">
+          <button type="button" class="ebp-btn ebp-btn--ghost" id="labels-btn" aria-pressed="true">Labels shown</button>
+        </div>
+
+        <h2 class="vebp-panel-h">Path finder</h2>
+        <p class="ebp-field__hint">Find connection paths between two bands/members.</p>
+        <div class="ebp-field vebp-combo">
+          <label for="start-node">Start</label>
+          <input type="text" id="start-node" placeholder="Start node">
+        </div>
+        <div class="ebp-field vebp-combo">
+          <label for="end-node">End</label>
+          <input type="text" id="end-node" placeholder="End node">
+        </div>
+        <div class="vebp-actions">
+          <button type="button" class="ebp-btn ebp-btn--primary" id="find-path-btn">Find path</button>
+          <button type="button" class="ebp-btn ebp-btn--ghost" id="clear-path-btn">Clear path</button>
+        </div>
+        <p class="vebp-status" id="path-status" role="status" aria-live="polite"></p>
+
+        <h2 class="vebp-panel-h">Filter by connections</h2>
+        <div class="ebp-field">
+          <label for="degree-range">Minimum connections</label>
+          <div class="vebp-range-row">
+            <input type="range" id="degree-range" min="0" max="10" value="0" aria-describedby="degree-status">
+            <output id="degree-label" for="degree-range">0</output>
+          </div>
+        </div>
+        <p class="vebp-status" id="degree-status" role="status" aria-live="polite"></p>
+
+        <div class="vebp-actions">
+          <button type="button" class="ebp-btn" id="export-btn">Export as PNG</button>
+          <button type="button" class="ebp-btn ebp-btn--ghost" id="reset-btn">Reset all</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="vebp-stage vebp-chart">
+      <svg id="canvas" role="img" aria-labelledby="canvas-title">
+        <title id="canvas-title">Network graph of East Bay punk bands and members. Use the search and path finder in the side panel to explore it with a keyboard or screen reader.</title>
+      </svg>
+      <div class="vebp-zoom" role="group" aria-label="Zoom">
+        <button type="button" class="ebp-btn ebp-btn--sm" id="zoom-in" aria-label="Zoom in">+</button>
+        <button type="button" class="ebp-btn ebp-btn--sm" id="zoom-out" aria-label="Zoom out">&minus;</button>
+        <button type="button" class="ebp-btn ebp-btn--sm" id="zoom-fit" aria-label="Fit to view">Fit</button>
+      </div>
+    </div>
+  </main>
+
+  <div id="footer-placeholder" class="vebp-footer-slot"><noscript>
+<footer class="ebp-footer">
+  <p>The <strong>East Bay Punk Digital Archive</strong> is curated by <a href="https://stefanomorello.com">Stefano Morello</a>. Visualizing East Bay Punk &copy; 2025 Stefano Morello. <a href="https://github.com/smorello87/vebp">Source code on GitHub</a>.</p>
+</footer>
+</noscript></div>
+  <script src="shared/core/ebp-core.js"></script>
+  <script src="shared/js/vebp.js"></script>
+  <script src="shared/js/components.js"></script>
+  <script>
+    let svg, width, height, simulation;
+    let nodeGroups, links, currentPath = [];
+    let allNodes = [], allLinks = [];
+    let degreeMap = new Map();
+    let labelsVisible = true;
+    const reduced = VEBP.reducedMotion();
+    const DURATION = reduced ? 0 : 1000;
+    const tooltip = d3.select("body").append("div").attr("class", "tooltip").style("display", "none");
+    const stage = document.querySelector(".vebp-stage");
+    const searchStatus = document.getElementById("search-status");
+    const searchResults = document.getElementById("search-results");
+    const pathStatus = document.getElementById("path-status");
+    const degreeStatus = document.getElementById("degree-status");
+
+    /* Shapes: bands are circles, members diamonds (shape + colour, never colour alone). */
+    const SYMBOL = {
+      band: d3.symbol().type(d3.symbolCircle).size(201)(),
+      member: d3.symbol().type(d3.symbolDiamond).size(230)()
+    };
+
+    VEBP.disclosure(document.getElementById("tools-toggle"), document.getElementById("people-tools"), { open: "Hide tools", closed: "Show tools" });
+
+    function stageSize() {
+      width = stage.clientWidth || window.innerWidth;
+      height = stage.clientHeight || window.innerHeight;
+    }
+    stageSize();
+    svg = d3.select("#canvas");
+    svg.attr("width", width).attr("height", height);
+    const zoom = d3.zoom().scaleExtent([0.1, 8]).on("zoom", e => container.attr("transform", e.transform));
+    svg.call(zoom);
+    const container = svg.append("g");
+
+    VEBP.announce(searchStatus, "Loading network…");
+
+    d3.json("data/merged-json.json").then(data => {
+      allNodes = data.nodes;
+      allLinks = data.links.map(l => ({ source: l.source, target: l.target }));
+
+      // Pre-compute degree map for O(1) lookups
+      allNodes.forEach(n => degreeMap.set(n.id, 0));
+      allLinks.forEach(l => {
+        const sid = typeof l.source === 'object' ? l.source.id : l.source;
+        const tid = typeof l.target === 'object' ? l.target.id : l.target;
+        degreeMap.set(sid, (degreeMap.get(sid) || 0) + 1);
+        degreeMap.set(tid, (degreeMap.get(tid) || 0) + 1);
+      });
+
+      simulation = d3.forceSimulation(allNodes)
+        .force("link", d3.forceLink(allLinks).id(d => d.id).distance(100))
+        .force("charge", d3.forceManyBody().strength(-800))
+        .force("center", d3.forceCenter(width / 2, height / 2));
+
+      links = container.append("g")
+        .selectAll("line")
+        .data(allLinks)
+        .join("line")
+        .classed("link", true);
+
+      nodeGroups = container.append("g")
+        .selectAll("g.node")
+        .data(allNodes)
+        .join("g")
+        .classed("node", true)
+        .call(d3.drag()
+          .on("start", (e,d) => { if (reduced) return; if(!e.active) simulation.alphaTarget(0.3).restart(); d.fx=d.x; d.fy=d.y; })
+          .on("drag", (e,d) => { if (reduced) { d.x = e.x; d.y = e.y; ticked(); return; } d.fx=e.x; d.fy=e.y; })
+          .on("end", (e,d) => { if (reduced) return; if(!e.active) simulation.alphaTarget(0); d.fx=null; d.fy=null; }))
+        .on("mouseover", (e,d) => {
+          const degree = degreeMap.get(d.id) || 0;
+          tooltip.text(d.id + ' (' + (d.type === 'band' ? 'band' : 'member') + ') — Connections: ' + degree)
+            .style("left", (e.pageX+10)+"px")
+            .style("top", (e.pageY-10)+"px")
+            .style("display", "block");
+        })
+        .on("mouseout", () => { tooltip.style("display", "none"); });
+
+      nodeGroups.append("path")
+        .attr("d", d => d.type === 'band' ? SYMBOL.band : SYMBOL.member)
+        .attr("class", d => "node-shape node-shape--" + (d.type === 'band' ? 'band' : 'member'));
+
+      nodeGroups.append("text")
+        .text(d => d.id)
+        .attr("dx", 10)
+        .attr("dy", 5)
+        .attr("class", "label");
+
+      function ticked() {
+        nodeGroups.attr("transform", d => `translate(${d.x}, ${d.y})`);
+        links.attr("x1", d => d.source.x)
+          .attr("y1", d => d.source.y)
+          .attr("x2", d => d.target.x)
+          .attr("y2", d => d.target.y);
+      }
+
+      if (reduced) {
+        /* Reduced motion: settle the layout off-screen, then draw it once (no animation). */
+        simulation.stop();
+        const n = Math.ceil(Math.log(simulation.alphaMin()) / Math.log(1 - simulation.alphaDecay()));
+        for (let i = 0; i < n; i++) simulation.tick();
+        ticked();
+      } else {
+        simulation.on("tick", ticked);
+      }
+
+      VEBP.announce(searchStatus, "");
+      degreeStatus.textContent = allNodes.length + " bands and members, " + allLinks.length + " connections.";
+
+      d3.select("#search").on("input", function() { highlightSearch(this.value); });
+
+      const names = allNodes.map(n => n.id);
+      const suggest = q => {
+        const lq = q.toLowerCase(); const out = [];
+        for (let i = 0; i < names.length && out.length < 20; i++) if (names[i].toLowerCase().includes(lq)) out.push(names[i]);
+        return out;
+      };
+      VEBP.combobox(document.getElementById("search"), { source: suggest, listLabel: "Matching bands and members", onSelect: v => highlightSearch(v) });
+      VEBP.combobox(document.getElementById("start-node"), { source: suggest, listLabel: "Matching start nodes" });
+      VEBP.combobox(document.getElementById("end-node"), { source: suggest, listLabel: "Matching end nodes", onEnter: () => simpleFindPathHandler() });
+    }).catch(err => {
+      console.error('Failed to load network data:', err);
+      VEBP.announce(searchStatus, "");
+      const msg = document.createElement('div');
+      msg.className = 'ebp-notice ebp-notice--accent vebp-stage__message';
+      msg.setAttribute('role', 'alert');
+      msg.textContent = 'Failed to load network data.';
+      stage.appendChild(msg);
+    });
+
+    const byId = id => allNodes.find(n => n.id === id);
+
+    function highlightSearch(value) {
+      if (!nodeGroups) return;
+      const term = String(value || '').trim().toLowerCase();
+      if (!term) {
+        resetView();
+        nodeGroups.classed("is-match", false);
+        VEBP.announce(searchStatus, "");
+        searchResults.textContent = '';
+        return;
+      }
+      const matched = allNodes.filter(d => d.id.toLowerCase().includes(term));
+      if (matched.length > 0) {
+        const connected = new Set();
+        matched.forEach(n => {
+          allLinks.forEach(l => {
+            if(l.source === n) connected.add(l.target);
+            if(l.target === n) connected.add(l.source);
+          });
+        });
+        const important = [...new Set([...matched, ...connected])];
+        nodeGroups.style("opacity", d => important.includes(d) ? 1 : 0.1);
+        nodeGroups.classed("is-match", d => matched.includes(d));
+        links.style("opacity", l => (important.includes(l.source) || important.includes(l.target)) ? 1 : 0.1);
+        centerNodes(matched);
+        const exact = matched.find(n => n.id.toLowerCase() === term);
+        const focus = exact || (matched.length === 1 ? matched[0] : null);
+        VEBP.announce(searchStatus, matched.length + (matched.length === 1 ? " match" : " matches") + ", " +
+          (important.length - matched.length) + " directly connected highlighted." + (focus ? " Connections of " + focus.id + " listed below." : ""));
+        renderConnections(focus, matched);
+      } else {
+        VEBP.announce(searchStatus, "No bands or members match “" + value.trim() + "”.");
+        searchResults.textContent = '';
+      }
+    }
+
+    /* Text alternative: list the neighbours of the focused node as buttons. */
+    function renderConnections(node, matched) {
+      searchResults.textContent = '';
+      if (!node) {
+        if (matched && matched.length > 1) {
+          const p = document.createElement('p');
+          p.className = 'ebp-field__hint';
+          p.textContent = 'Choose one name from the suggestions to list its connections.';
+          searchResults.appendChild(p);
+        }
+        return;
+      }
+      const neighbours = [];
+      allLinks.forEach(l => {
+        if (l.source === node) neighbours.push(l.target);
+        else if (l.target === node) neighbours.push(l.source);
+      });
+      const uniq = [...new Set(neighbours)].sort((a, b) => a.id.localeCompare(b.id));
+      const p = document.createElement('p');
+      const strong = document.createElement('strong');
+      strong.textContent = node.id;
+      p.appendChild(strong);
+      p.appendChild(document.createTextNode(' (' + (node.type === 'band' ? 'band' : 'member') + ') — ' + uniq.length + ' connection' + (uniq.length === 1 ? '' : 's') + ':'));
+      searchResults.appendChild(p);
+      if (!uniq.length) return;
+      const ul = document.createElement('ul');
+      ul.className = 'people-connections';
+      ul.setAttribute('aria-label', 'Connections of ' + node.id);
+      uniq.forEach(n => {
+        const li = document.createElement('li');
+        const b = document.createElement('button');
+        b.type = 'button';
+        const name = document.createElement('span');
+        name.textContent = n.id;
+        const type = document.createElement('span');
+        type.className = 'people-type';
+        type.textContent = n.type === 'band' ? 'band' : 'member';
+        b.appendChild(name); b.appendChild(type);
+        b.addEventListener('click', () => {
+          const input = document.getElementById('search');
+          input.value = n.id;
+          highlightSearch(n.id);
+          input.focus();
+        });
+        li.appendChild(b);
+        ul.appendChild(li);
+      });
+      searchResults.appendChild(ul);
+    }
+
+    function resetView() {
+      if (!nodeGroups) return;
+      nodeGroups.style("opacity", 1);
+      container.selectAll("line").style("opacity", 0.3);
+      svg.transition().duration(DURATION).call(zoom.transform, d3.zoomIdentity);
+    }
+
+    function centerNodes(nodesToCenter) {
+      const xExtent = d3.extent(nodesToCenter, d => d.x);
+      const yExtent = d3.extent(nodesToCenter, d => d.y);
+      const centerX = (xExtent[0] + xExtent[1]) / 2;
+      const centerY = (yExtent[0] + yExtent[1]) / 2;
+      let scale = 1;
+      if (xExtent[1] - xExtent[0] > 0 && yExtent[1] - yExtent[0] > 0) {
+        scale = Math.min(8, 0.9 / Math.max((xExtent[1]-xExtent[0]) / width, (yExtent[1]-yExtent[0]) / height));
+      }
+      if (nodesToCenter.length === 1) scale = Math.min(scale, 2);
+      svg.transition().duration(DURATION)
+        .call(zoom.transform, d3.zoomIdentity
+          .translate(-centerX * scale + width / 2, -centerY * scale + height / 2)
+          .scale(scale));
+    }
+
+    function toggleLabels() {
+      labelsVisible = !labelsVisible;
+      if (nodeGroups) nodeGroups.select("text").style("opacity", labelsVisible ? 1 : 0);
+      const b = document.getElementById("labels-btn");
+      b.setAttribute("aria-pressed", labelsVisible ? "true" : "false");
+      b.textContent = labelsVisible ? "Labels shown" : "Labels hidden";
+    }
+
+    function simpleFindPathHandler() {
+      clearPath();
+      const start = document.getElementById("start-node").value.trim();
+      const end = document.getElementById("end-node").value.trim();
+      if (!start || !end) { VEBP.announce(pathStatus, "Please enter both start and end node IDs."); return; }
+      const startL = start.toLowerCase();
+      const endL = end.toLowerCase();
+      const adj = new Map();
+      const nameOf = new Map();
+      allNodes.forEach(n => { adj.set(n.id.toLowerCase(), []); nameOf.set(n.id.toLowerCase(), n.id); });
+      if (!adj.has(startL) || !adj.has(endL)) {
+        VEBP.announce(pathStatus, "Choose both names from the suggestions: " + (!adj.has(startL) ? "“" + start + "”" : "“" + end + "”") + " is not in the network.");
+        return;
+      }
+      allLinks.forEach(link => {
+        const src = (typeof link.source === "object") ? link.source.id.toLowerCase() : String(link.source).toLowerCase();
+        const tgt = (typeof link.target === "object") ? link.target.id.toLowerCase() : String(link.target).toLowerCase();
+        if (adj.has(src) && adj.has(tgt)) { adj.get(src).push(tgt); adj.get(tgt).push(src); }
+      });
+
+      function bfs(source) {
+        const dist = {};
+        for (let key of adj.keys()) dist[key] = Infinity;
+        dist[source] = 0;
+        const queue = [source];
+        while (queue.length > 0) {
+          const u = queue.shift();
+          for (let v of (adj.get(u) || [])) {
+            if (dist[v] === Infinity) { dist[v] = dist[u] + 1; queue.push(v); }
+          }
+        }
+        return dist;
+      }
+
+      const distFromStart = bfs(startL);
+      const distFromEnd = bfs(endL);
+      const d = distFromStart[endL];
+      if (d === Infinity) { VEBP.announce(pathStatus, "No path found between these nodes."); return; }
+
+      container.selectAll("line").each(function(l) {
+        const s = (typeof l.source === "object") ? l.source.id.toLowerCase() : l.source.toLowerCase();
+        const t = (typeof l.target === "object") ? l.target.id.toLowerCase() : l.target.toLowerCase();
+        if ((distFromStart[s] + 1 + distFromEnd[t] === d) || (distFromStart[t] + 1 + distFromEnd[s] === d)) {
+          d3.select(this).classed("highlight-path", true);
+        }
+      });
+
+      const pathNodes = new Set();
+      for (let node of adj.keys()) {
+        if (distFromStart[node] + distFromEnd[node] === d) pathNodes.add(node);
+      }
+      nodeGroups.select(".node-shape").classed("highlight-node", d => pathNodes.has(d.id.toLowerCase()));
+
+      /* Text result: one of the shortest chains, spelled out. */
+      const chain = [startL];
+      let cur = startL;
+      for (let step = 1; step <= d; step++) {
+        cur = (adj.get(cur) || []).find(v => distFromStart[v] === step && distFromEnd[v] === d - step);
+        if (!cur) break;
+        chain.push(cur);
+      }
+      VEBP.announce(pathStatus, d + (d === 1 ? " step" : " steps") + " apart (" + pathNodes.size + " nodes lie on a shortest path). One path: " +
+        chain.map(k => nameOf.get(k)).join(" → ") + ".");
+    }
+
+    function clearPath() {
+      if (!nodeGroups) return;
+      nodeGroups.select(".node-shape").classed("highlight-node", false);
+      container.selectAll("line").classed("highlight-path", false);
+      VEBP.announce(pathStatus, "");
+    }
+
+    function filterByDegree() {
+      const threshold = parseInt(document.getElementById("degree-range").value);
+      document.getElementById("degree-label").textContent = threshold;
+      if (!nodeGroups) return;
+      let shown = 0;
+      nodeGroups.style("opacity", d => {
+        const ok = (degreeMap.get(d.id) || 0) >= threshold;
+        if (ok) shown++;
+        return ok ? 1 : 0.1;
+      });
+      VEBP.announce(degreeStatus, shown + " of " + allNodes.length + " nodes have at least " + threshold + " connection" + (threshold === 1 ? "" : "s") + ".");
+    }
+    document.getElementById("degree-range").addEventListener("input", filterByDegree);
+
+    async function exportPNG() {
+      const p = VEBP.palette();
+      const clonedSvg = svg.node().cloneNode(true);
+      const svgNS = "http://www.w3.org/2000/svg";
+      const styleEl = document.createElementNS(svgNS, "style");
+      styleEl.textContent =
+        `.link { stroke: ${p.edge}; stroke-opacity: 0.3; }` +
+        ` .node-shape { stroke: ${p.halo}; stroke-width: 1.5px; }` +
+        ` .node-shape--band { fill: ${p.band}; } .node-shape--member { fill: ${p.member}; }` +
+        ` .label { font: 11px "DM Mono", monospace; fill: ${p.label}; }` +
+        ` .highlight-path { stroke: ${p.path}; stroke-width: 4px; stroke-opacity: 1; } .highlight-node { stroke: ${p.path}; stroke-width: 4px; }`;
+      clonedSvg.insertBefore(styleEl, clonedSvg.firstChild);
+      const bbox = svg.node().getBBox();
+      const rect = document.createElementNS(svgNS, "rect");
+      rect.setAttribute("x", bbox.x); rect.setAttribute("y", bbox.y);
+      rect.setAttribute("width", bbox.width); rect.setAttribute("height", bbox.height);
+      rect.setAttribute("fill", p.bg);
+      clonedSvg.insertBefore(rect, clonedSvg.firstChild);
+      const svgString = new XMLSerializer().serializeToString(clonedSvg);
+      const canvasEl = document.createElement('canvas');
+      canvasEl.width = width; canvasEl.height = height;
+      const ctx = canvasEl.getContext('2d');
+      await canvg.Canvg.fromString(ctx, svgString).render();
+      const a = document.createElement('a');
+      a.download = 'network.png'; a.href = canvasEl.toDataURL(); a.click();
+    }
+
+    function fullReset() {
+      clearPath();
+      document.getElementById("search").value = '';
+      document.getElementById("start-node").value = '';
+      document.getElementById("end-node").value = '';
+      document.getElementById("degree-range").value = 0;
+      document.getElementById("degree-label").textContent = '0';
+      searchResults.textContent = '';
+      VEBP.announce(searchStatus, "");
+      if (!nodeGroups) return;
+      nodeGroups.classed("is-match", false);
+      resetView();
+      degreeStatus.textContent = allNodes.length + " bands and members, " + allLinks.length + " connections.";
+    }
+
+    document.getElementById("labels-btn").addEventListener("click", toggleLabels);
+    document.getElementById("find-path-btn").addEventListener("click", simpleFindPathHandler);
+    document.getElementById("clear-path-btn").addEventListener("click", clearPath);
+    document.getElementById("export-btn").addEventListener("click", exportPNG);
+    document.getElementById("reset-btn").addEventListener("click", fullReset);
+    document.getElementById("zoom-in").addEventListener("click", () => svg.transition().duration(reduced ? 0 : 250).call(zoom.scaleBy, 1.5));
+    document.getElementById("zoom-out").addEventListener("click", () => svg.transition().duration(reduced ? 0 : 250).call(zoom.scaleBy, 1 / 1.5));
+    document.getElementById("zoom-fit").addEventListener("click", () => { if (allNodes.length && allNodes[0].x !== undefined) centerNodes(allNodes); });
+
+    window.addEventListener("resize", () => {
+      stageSize();
+      svg.attr("width", width).attr("height", height);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en" data-default-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gilman – VEBP</title>
+  <meta name="color-scheme" content="light dark">
+  <script>(function(d){var r=d.documentElement,t;try{t=localStorage.getItem("ebp-theme")}catch(e){}if(t!=="light"&&t!=="dark"){t=r.getAttribute("data-default-theme")==="dark"?"dark":"light"}r.setAttribute("data-theme",t);r.classList.add("ebp-js")})(document);</script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-9QR1ELFD27"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-9QR1ELFD27');
+  </script>
+  <script src="https://unpkg.com/vis-network@9.1.6/standalone/umd/vis-network.min.js"></script>
+  <link rel="stylesheet" href="shared/core/ebp-core.css">
+  <link rel="stylesheet" href="shared/css/style.css">
+  <style>
+    /* Desktop: intro + tools on top of the left column, band details below, network right. */
+    .gilman-main {
+      grid-template-rows: minmax(0, 1fr) auto;
+      grid-template-areas: "side stage" "details stage";
+    }
+    .gilman-main .vebp-side { grid-area: side; border-bottom: var(--ebp-rule) solid var(--ebp-ink); padding-bottom: var(--ebp-s-4); }
+    .gilman-main .vebp-stage { grid-area: stage; }
+    #details-sidebar {
+      grid-area: details;
+      min-width: 0;
+      max-height: 55vh;
+      overflow-y: auto;
+      padding: 0 var(--ebp-s-4) var(--ebp-s-5);
+      background-color: var(--ebp-surface);
+      border-right: var(--ebp-rule) solid var(--ebp-ink);
+      font-size: var(--ebp-text-sm);
+    }
+    #details-sidebar .vebp-panel-h { border-top: 0; margin-top: var(--ebp-s-3); }
+    #network-container { width: 100%; height: 100%; }
+    #network-container:focus-visible { outline-offset: -4px; }
+
+    .sidebar-band-name {
+      margin: 0 0 var(--ebp-s-2);
+      font-family: var(--ebp-font-display);
+      font-weight: 400;
+      font-size: 2rem;
+      line-height: 1;
+      text-transform: uppercase;
+      letter-spacing: 0.01em;
+    }
+    .sidebar-badges { display: flex; flex-wrap: wrap; gap: var(--ebp-s-2); margin-bottom: var(--ebp-s-2); }
+    .sidebar-desc { color: var(--ebp-ink-2); margin: 0 0 var(--ebp-s-3); }
+    .sidebar-empty { color: var(--ebp-ink-2); margin: 0; }
+    .gilman-connections {
+      margin: 0 0 var(--ebp-s-3);
+      padding: 0;
+      list-style: none;
+      border-top: 1px solid var(--ebp-border);
+    }
+    .gilman-connections li { border-bottom: 1px solid var(--ebp-border); }
+    .gilman-connections button {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--ebp-s-2);
+      width: 100%;
+      min-height: var(--ebp-target);
+      padding: var(--ebp-s-1) var(--ebp-s-2);
+      background: none;
+      border: 0;
+      color: var(--ebp-ink);
+      text-align: left;
+      font-size: var(--ebp-text-sm);
+    }
+    .gilman-connections button:hover { background-color: var(--ebp-surface-2); }
+    .gilman-connections button:hover .conn-name { text-decoration: underline; }
+    .conn-weight { font-family: var(--ebp-font-mono); font-size: var(--ebp-text-xs); color: var(--ebp-ink-2); white-space: nowrap; }
+
+    .vebp-zoom { position: absolute; top: var(--ebp-s-3); right: var(--ebp-s-3); z-index: 10; display: flex; flex-direction: column; gap: var(--ebp-s-1); }
+    .vebp-zoom .ebp-btn { padding: 0; }
+
+    /* vis-network edge tooltips */
+    div.vis-tooltip {
+      padding: var(--ebp-s-1) var(--ebp-s-2);
+      background-color: var(--ebp-ink);
+      color: var(--ebp-bg);
+      border: 0;
+      border-radius: var(--ebp-radius);
+      box-shadow: none;
+      font-family: var(--ebp-font-mono);
+      font-size: var(--ebp-text-xs);
+      white-space: pre-line;
+    }
+
+    @media (max-width: 47.999rem) {
+      #details-sidebar {
+        max-height: none;
+        border-right: 0;
+        border-top: var(--ebp-rule) solid var(--ebp-ink);
+        padding: 0 var(--ebp-gutter) var(--ebp-s-5);
+      }
+      .gilman-main .vebp-side { border-bottom: 0; }
+    }
+  </style>
+</head>
+<body class="vebp-app">
+  <a class="ebp-skip" href="#content">Skip to main content</a>
+  <div id="nav-placeholder" class="vebp-header-slot"><noscript>
+<header class="ebp-header">
+  <div class="ebp-header__bar">
+    <a class="ebp-brand" href="https://eastbaypunkda.com/"><img class="ebp-brand__logo" src="shared/core/img/logo.png" alt="" width="60" height="40"><span class="ebp-brand__name">East Bay Punk <span>Digital Archive</span></span></a>
+    <nav id="ebp-nav" class="ebp-nav" aria-label="Main">
+      <ul class="ebp-nav__list">
+        <li><a href="https://eastbaypunkda.com/s/east-bay-punk-digital-archive/item-set">Collections</a></li>
+        <li><a href="https://eastbaypunkda.com/s/east-bay-punk-digital-archive/item">Items</a></li>
+        <li><a href="https://eastbaypunkda.com/vebp/" aria-current="true">VEBP</a></li>
+        <li><a href="https://eastbaypunkda.com/toolkit/">Toolkit</a></li>
+        <li><a href="https://eastbaypunkda.com/s/east-bay-punk-digital-archive/page/ethics">Ethics</a></li>
+        <li><a href="https://eastbaypunkda.com/s/east-bay-punk-digital-archive/page/about">About</a></li>
+      </ul>
+    </nav>
+  </div>
+  <nav class="ebp-subnav" aria-label="Visualizing East Bay Punk">
+    <a class="ebp-subnav__title" href="index.html">Visualizing East Bay Punk</a>
+    <ul class="ebp-subnav__list">
+      <li><a href="people.html">People</a></li>
+      <li><a href="places.html">Places</a></li>
+      <li><a href="words.html">Words</a></li>
+      <li><a href="shows.html">Shows</a></li>
+      <li><a href="gilman.html" aria-current="page">Gilman</a></li>
+    </ul>
+  </nav>
+</header>
+</noscript></div>
+
+  <main id="content" tabindex="-1" class="vebp-app__main gilman-main">
+    <div class="vebp-side">
+      <h1>Gilman</h1>
+      <div class="vebp-summary">
+        <p>This visualization shows every performance at the Gilman Street Project between 1986 and 1994. Node size reflects the number of shows; edge thickness indicates shared performances.</p>
+        <details class="vebp-howto">
+          <summary>How to use this visualization</summary>
+          <ul>
+            <li><strong>Click</strong> a node for band details and connections.</li>
+            <li><strong>Search</strong> to filter the network to a specific band.</li>
+            <li><strong>Reset</strong> to return to the full network.</li>
+            <li><strong>Export</strong> to save as PNG.</li>
+            <li><strong>Drag &amp; Zoom</strong> to navigate. With the network focused, the arrow keys pan and + / &minus; zoom.</li>
+            <li><strong>Colors</strong> represent communities — bands that frequently played together.</li>
+            <li><strong>Size</strong> reflects total co-performances across the network.</li>
+            <li>Every band's connections are also listed as text under <em>Band details</em>.</li>
+          </ul>
+        </details>
+      </div>
+
+      <button type="button" class="ebp-btn vebp-toggle" id="mobile-toolbar-toggle" aria-expanded="false"><span class="vebp-toggle__label">Show tools</span></button>
+      <div id="controls" class="vebp-collapsible">
+        <h2 class="vebp-panel-h">Search</h2>
+        <div class="ebp-field vebp-combo" id="search-container">
+          <label for="search">Search for a band</label>
+          <input type="search" id="search" placeholder="Search band...">
+        </div>
+        <div class="vebp-actions">
+          <button type="button" class="ebp-btn ebp-btn--ghost" id="reset-btn">Reset</button>
+          <button type="button" class="ebp-btn ebp-btn--ghost" id="export-btn">Export</button>
+          <button type="button" class="ebp-btn ebp-btn--ghost" id="help-btn" aria-haspopup="dialog">Help</button>
+        </div>
+        <p class="vebp-status" id="gilman-status" role="status" aria-live="polite"></p>
+
+        <h2 class="vebp-panel-h" id="legend-h">Communities</h2>
+        <p class="ebp-field__hint" id="legend-hint">Loading…</p>
+        <ul class="vebp-legend vebp-legend--list" id="legend" aria-labelledby="legend-h"></ul>
+      </div>
+    </div>
+
+    <div class="vebp-stage">
+      <div id="network-container" tabindex="0" role="region" aria-label="Gilman co-performance network. With focus here, arrow keys pan and plus or minus zoom. Band details are listed as text in the side panel."></div>
+      <div class="vebp-zoom" role="group" aria-label="Zoom">
+        <button type="button" class="ebp-btn ebp-btn--sm" id="zoom-in" aria-label="Zoom in">+</button>
+        <button type="button" class="ebp-btn ebp-btn--sm" id="zoom-out" aria-label="Zoom out">&minus;</button>
+        <button type="button" class="ebp-btn ebp-btn--sm" id="zoom-fit" aria-label="Fit to view">Fit</button>
+      </div>
+    </div>
+
+    <section id="details-sidebar" aria-labelledby="details-h">
+      <h2 class="vebp-panel-h" id="details-h">Band details</h2>
+      <div id="details-body"><p class="sidebar-empty">Click a node to see band details &amp; connections</p></div>
+    </section>
+  </main>
+
+  <dialog class="help-overlay" id="helpOverlay" aria-labelledby="help-title">
+    <div class="help-content">
+      <button type="button" class="ebp-btn ebp-btn--sm help-close" data-dialog-close>Close</button>
+      <h2 id="help-title">About</h2>
+      <p>This visualization shows every performance at the Gilman Street Project between 1986 and 1994. Node size reflects the number of shows; edge thickness indicates shared performances.</p>
+      <p><strong>How to use:</strong></p>
+      <ul>
+        <li><strong>Click</strong> a node for band details and connections.</li>
+        <li><strong>Search</strong> to filter the network to a specific band.</li>
+        <li><strong>Reset</strong> to return to the full network.</li>
+        <li><strong>Export</strong> to save as PNG.</li>
+        <li><strong>Drag & Zoom</strong> to navigate.</li>
+        <li><strong>Colors</strong> represent communities — bands that frequently played together.</li>
+        <li><strong>Size</strong> reflects total co-performances across the network.</li>
+      </ul>
+      <p class="ebp-muted"><strong>Source:</strong> Brian Edge, <em>924 Gilman: The Story So Far</em>, Maximum Rocknroll, 2004.</p>
+    </div>
+  </dialog>
+
+  <div id="footer-placeholder" class="vebp-footer-slot"><noscript>
+<footer class="ebp-footer">
+  <p>The <strong>East Bay Punk Digital Archive</strong> is curated by <a href="https://stefanomorello.com">Stefano Morello</a>. Visualizing East Bay Punk &copy; 2025 Stefano Morello. <a href="https://github.com/smorello87/vebp">Source code on GitHub</a>.</p>
+</footer>
+</noscript></div>
+  <script src="shared/core/ebp-core.js"></script>
+  <script src="shared/js/vebp.js"></script>
+  <script src="shared/js/components.js"></script>
+  <script>
+    const reduced = VEBP.reducedMotion();
+    const statusEl = document.getElementById('gilman-status');
+    const detailsBody = document.getElementById('details-body');
+    const searchInput = document.getElementById('search');
+
+    let network = null, allNodes = [], allEdges = [];
+    let originalNodes = [], originalEdges = [];
+    let searchActive = false, initialView = null, initialScale = null;
+    let showCounts = {}, bandNames = [];
+    let selectedBand = null;
+    let currentSelection = null;
+    let communityMap = {};   /* bandName → community index */
+    let communityCount = 0;
+
+    /* Communities: colour from the categorical chart tokens AND a node shape, so clusters
+       stay distinguishable without colour vision; the legend and details give the number. */
+    const SHAPES = ['dot', 'square', 'triangle', 'diamond', 'star', 'triangleDown', 'hexagon'];
+    const commColor = (p, c) => p.cat[c % p.cat.length];
+    /* Owner's decision (2026-11-18): every band is a plain dot. Communities are told apart by colour plus the
+       numbered legend and the cluster named in the details panel, so colour is still not the only cue. */
+    const commShape = c => 'dot';
+    const commVar = c => 'var(--ebp-viz-' + ((c % 8) + 1) + ')';
+
+    VEBP.disclosure(document.getElementById('mobile-toolbar-toggle'), document.getElementById('controls'), { open: 'Hide tools', closed: 'Show tools' });
+
+    /* Louvain community detection (weighted, single-level) */
+    function detectCommunities(nodeIds, edgeList) {
+      var adj = {};
+      nodeIds.forEach(function(id) { adj[id] = []; });
+      edgeList.forEach(function(e) {
+        adj[e.from].push({ node: e.to, weight: e.weight });
+        adj[e.to].push({ node: e.from, weight: e.weight });
+      });
+
+      /* Total edge weight (m) */
+      var m2 = 0; /* 2*m */
+      edgeList.forEach(function(e) { m2 += 2 * e.weight; });
+
+      /* Weighted degree per node (k_i) */
+      var degree = {};
+      nodeIds.forEach(function(id) {
+        var d = 0;
+        adj[id].forEach(function(n) { d += n.weight; });
+        degree[id] = d;
+      });
+
+      /* Initialize: each node in its own community */
+      var comm = {};
+      nodeIds.forEach(function(id, i) { comm[id] = i; });
+
+      /* Sum of weights inside each community (sigma_in) and total degree (sigma_tot) */
+      var sigmaIn = {};
+      var sigmaTot = {};
+      nodeIds.forEach(function(id, i) {
+        sigmaIn[i] = 0;
+        sigmaTot[i] = degree[id];
+      });
+
+      /* Iterate */
+      for (var iter = 0; iter < 20; iter++) {
+        var moved = false;
+        nodeIds.forEach(function(id) {
+          var currentComm = comm[id];
+          var ki = degree[id];
+
+          /* Compute weight of edges from id to each neighboring community */
+          var neighborComms = {};
+          adj[id].forEach(function(n) {
+            var nc = comm[n.node];
+            neighborComms[nc] = (neighborComms[nc] || 0) + n.weight;
+          });
+
+          /* Remove id from its community */
+          var kiIn = neighborComms[currentComm] || 0;
+          sigmaIn[currentComm] -= kiIn;
+          sigmaTot[currentComm] -= ki;
+
+          /* Find best community */
+          var bestComm = currentComm;
+          var bestGain = 0;
+
+          for (var nc in neighborComms) {
+            nc = parseInt(nc);
+            var kiC = neighborComms[nc] || 0;
+            var stot = sigmaTot[nc] || 0;
+            var gain = kiC - (stot * ki) / m2;
+            if (gain > bestGain) {
+              bestGain = gain;
+              bestComm = nc;
+            }
+          }
+
+          /* Move id to best community */
+          comm[id] = bestComm;
+          var kiInNew = neighborComms[bestComm] || 0;
+          sigmaIn[bestComm] = (sigmaIn[bestComm] || 0) + kiInNew;
+          sigmaTot[bestComm] = (sigmaTot[bestComm] || 0) + ki;
+
+          if (bestComm !== currentComm) moved = true;
+        });
+        if (!moved) break;
+      }
+
+      /* Remap labels to consecutive 0, 1, 2… sorted by community size (largest first) */
+      var groups = {};
+      for (var id in comm) {
+        var lbl = comm[id];
+        if (!groups[lbl]) groups[lbl] = [];
+        groups[lbl].push(id);
+      }
+      var sorted = Object.keys(groups).sort(function(a, b) { return groups[b].length - groups[a].length; });
+      var remap = {};
+      sorted.forEach(function(oldLabel, newIdx) { remap[oldLabel] = newIdx; });
+
+      var result = {};
+      for (var id in comm) { result[id] = remap[comm[id]]; }
+      return { labels: result, count: sorted.length, sizes: sorted.map(function(k) { return groups[k].length; }) };
+    }
+
+    /* ---- colours (recomputed on every theme switch) ----------------------- */
+    function nodeStyle(n, p) {
+      var bg = commColor(p, n._community);
+      return {
+        shape: commShape(n._community),
+        font: { size: 10 + n._t * 8, color: n._t > 0.25 ? p.ink : p.ink2, face: 'DM Mono', strokeWidth: 3, strokeColor: VEBP.alpha(p.halo, 0.85) },
+        color: { background: bg, border: p.halo, highlight: { background: bg, border: p.ink }, hover: { background: bg, border: p.ink } },
+        borderWidth: 1.5 + n._t * 2
+      };
+    }
+    function edgeStyle(edge, p) {
+      var t = edge._t;
+      var opacity = 0.08 + 0.5 * t;
+      /* If both endpoints share a community, tint edges with that community color */
+      var fromComm = communityMap[edge.from];
+      var toComm = communityMap[edge.to];
+      var base = (fromComm === toComm) ? commColor(p, fromComm) : p.edgeCross;
+      return { color: { color: VEBP.alpha(base, opacity), highlight: VEBP.alpha(base, 0.8), hover: VEBP.alpha(base, 0.6) } };
+    }
+
+    function presentNodeIds() {
+      return new Set(network.body.data.nodes.getIds());
+    }
+
+    function restoreOriginalState() {
+      if (!network) return;
+      var nodesData = network.body.data.nodes;
+      var edgesData = network.body.data.edges;
+      var present = presentNodeIds();
+      nodesData.update(originalNodes.filter(function(n) { return present.has(n.id); }).map(function(node) {
+        return { id: node.id, color: node.color, borderWidth: node.borderWidth, size: node.size, font: node.font, shape: node.shape };
+      }));
+      var allVisEdges = edgesData.get();
+      var edgeLookup = {};
+      originalEdges.forEach(function(edge) {
+        edgeLookup[edge.from + '|' + edge.to] = edge;
+        edgeLookup[edge.to + '|' + edge.from] = edge;
+      });
+      edgesData.update(allVisEdges.map(function(ve) {
+        var orig = edgeLookup[ve.from + '|' + ve.to];
+        return orig ? { id: ve.id, color: orig.color, width: orig.width } : { id: ve.id };
+      }));
+    }
+
+    function setSidebarEmpty() {
+      currentSelection = null;
+      detailsBody.textContent = '';
+      const empty = document.createElement('p');
+      empty.className = 'sidebar-empty';
+      empty.textContent = 'Click a node to see band details & connections';
+      detailsBody.appendChild(empty);
+    }
+
+    /* Highlight a node and its neighbours (used by click and by theme re-colouring). */
+    function highlightSelection(selectedId) {
+      const p = VEBP.palette();
+      const nodesData = network.body.data.nodes;
+      const edgesData = network.body.data.edges;
+      const neighborIds = new Set(network.getConnectedNodes(selectedId));
+      const connectedEdgeIds = new Set(network.getConnectedEdges(selectedId));
+      const present = presentNodeIds();
+      currentSelection = selectedId;
+
+      /* Batch node updates */
+      var nodeUpdates = originalNodes.filter(function(n) { return present.has(n.id); }).map(function(node) {
+        if (node.id === selectedId) {
+          return { id: node.id, color: { background: p.selected, border: p.ink, highlight: { background: p.selected, border: p.ink }, hover: { background: p.selected, border: p.ink } }, borderWidth: 4, size: node.size + 8, font: { size: node.font.size, color: p.ink, face: 'DM Mono', strokeWidth: 3, strokeColor: VEBP.alpha(p.halo, 0.85) } };
+        } else if (neighborIds.has(node.id)) {
+          return { id: node.id, color: { background: p.neighbor, border: p.ink }, borderWidth: 2.5, size: node.size + 3, font: { size: node.font.size, color: p.ink, face: 'DM Mono', strokeWidth: 3, strokeColor: VEBP.alpha(p.halo, 0.85) } };
+        } else {
+          return { id: node.id, color: { background: VEBP.alpha(p.dim, 0.5), border: VEBP.alpha(p.dim, 0.5) }, borderWidth: 1, size: node.size, font: { size: node.font.size, color: VEBP.alpha(p.ink, 0.1), face: 'DM Mono', strokeWidth: 0, strokeColor: 'transparent' } };
+        }
+      });
+      nodesData.update(nodeUpdates);
+
+      /* Batch edge updates — iterate vis IDs directly instead of filtering per edge */
+      var allVisEdges = edgesData.get();
+      var edgeUpdates = allVisEdges.map(function(ve) {
+        if (connectedEdgeIds.has(ve.id)) {
+          return { id: ve.id, color: { color: VEBP.alpha(p.selected, 0.7) }, width: (ve.width || 1) + 1 };
+        } else {
+          return { id: ve.id, color: { color: VEBP.alpha(p.selected, 0.03) }, width: 0.5 };
+        }
+      });
+      edgesData.update(edgeUpdates);
+    }
+
+    async function init() {
+      try {
+        VEBP.announce(statusEl, 'Loading and laying out the network…');
+        const response = await fetch("data/weighted-bands.csv");
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const rawData = await response.text();
+        const edges = [];
+        const nodes = new Set();
+        let minWeight = Infinity, maxWeight = 0;
+
+        const lines = rawData.split('\n').filter(l => l.trim());
+        const hasHeader = lines[0].toLowerCase().includes('source');
+        lines.slice(hasHeader ? 1 : 0).forEach(line => {
+          const parts = line.split(',').map(s => s.trim());
+          if (parts.length < 3) return;
+          const [source, target, weightStr] = parts;
+          if (source && target && weightStr) {
+            const w = parseInt(weightStr);
+            edges.push({ from: source, to: target, weight: w, title: source + ' & ' + target + '\nShared shows: ' + w, width: 1 });
+            nodes.add(source); nodes.add(target);
+            showCounts[source] = (showCounts[source] || 0) + w;
+            showCounts[target] = (showCounts[target] || 0) + w;
+            if (w < minWeight) minWeight = w;
+            if (w > maxWeight) maxWeight = w;
+          }
+        });
+
+        /* Detect communities */
+        var nodeIds = Array.from(nodes);
+        var detection = detectCommunities(nodeIds, edges);
+        communityMap = detection.labels;
+        communityCount = detection.count;
+
+        /* Legend: shape + colour + text for the largest communities */
+        var legendEl = document.getElementById('legend');
+        legendEl.textContent = '';
+        var maxLegend = Math.min(detection.count, 10);
+        document.getElementById('legend-hint').textContent = detection.count + ' communities detected — bands that frequently played together. The ' + maxLegend + ' largest:';
+        for (var ci = 0; ci < maxLegend; ci++) {
+          var li = document.createElement('li');
+          var sw = document.createElement('span');
+          sw.className = 'vebp-swatch vebp-swatch--' + commShape(ci);
+          sw.style.setProperty('--swatch', commVar(ci));
+          li.appendChild(sw);
+          li.appendChild(document.createTextNode('Cluster ' + (ci + 1) + ' — ' + detection.sizes[ci] + ' bands'));
+          legendEl.appendChild(li);
+        }
+
+        const p = VEBP.palette();
+
+        /* Scale edge width and compute per-edge color based on weight + community */
+        edges.forEach(function(edge) {
+          var t = (maxWeight === minWeight) ? 0.5 : (edge.weight - minWeight) / (maxWeight - minWeight);
+          edge.width = 0.5 + 8 * t;
+          edge._t = t;
+          Object.assign(edge, edgeStyle(edge, p));
+        });
+
+        let minShow = Infinity, maxShow = 0;
+        for (let b in showCounts) {
+          if (showCounts[b] < minShow) minShow = showCounts[b];
+          if (showCounts[b] > maxShow) maxShow = showCounts[b];
+        }
+
+        originalNodes = Array.from(nodes).map(function(id) {
+          var t = (maxShow === minShow) ? 0.5 : (showCounts[id] - minShow) / (maxShow - minShow);
+          var size = 12 + t * 38;
+          var comm = communityMap[id] || 0;
+          var node = { id: id, label: id, size: size, _community: comm, _t: t };
+          return Object.assign(node, nodeStyle(node, p));
+        });
+        bandNames = originalNodes.map(function(n) { return n.label; });
+        originalEdges = edges;
+        resetNetwork();
+
+        const container = document.getElementById('network-container');
+        network = new vis.Network(container, {
+          nodes: new vis.DataSet(allNodes),
+          edges: new vis.DataSet(allEdges)
+        }, {
+          physics: {
+            stabilization: { enabled: true, iterations: 1000 },
+            solver: 'barnesHut',
+            barnesHut: { gravitationalConstant: -4000, springLength: 250, avoidOverlap: 1 }
+          },
+          nodes: { shape: 'dot', font: { size: 12, color: p.ink, face: 'DM Mono' } },
+          edges: { smooth: false },
+          interaction: { dragNodes: true, dragView: true, zoomView: true, hover: true, tooltipDelay: 150, keyboard: { enabled: true, bindToWindow: false } }
+        });
+
+        network.once("stabilizationIterationsDone", () => {
+          if (!searchActive) {
+            const positions = network.getPositions();
+            originalNodes = originalNodes.map(node => positions[node.id] ? { ...node, x: positions[node.id].x, y: positions[node.id].y } : node);
+            initialView = network.getViewPosition();
+            initialScale = network.getScale();
+          }
+          network.setOptions({ physics: false });
+          VEBP.announce(statusEl, originalNodes.length + ' bands and ' + originalEdges.length + ' shared-bill connections loaded.');
+        });
+
+        network.on("click", function(params) {
+          if (params.nodes.length > 0) {
+            const selectedId = params.nodes[0];
+            highlightSelection(selectedId);
+            showDetails(selectedId);
+          } else if (!searchActive) {
+            selectedBand = null;
+            restoreOriginalState();
+            setSidebarEmpty();
+          }
+        });
+
+        /* Theme switch: recompute every colour from the tokens and re-apply the current view. */
+        VEBP.onThemeChange(function(pal) {
+          originalNodes.forEach(function(n) { Object.assign(n, nodeStyle(n, pal)); });
+          originalEdges.forEach(function(e) { Object.assign(e, edgeStyle(e, pal)); });
+          network.setOptions({ nodes: { font: { color: pal.ink } } });
+          var sel = currentSelection;
+          restoreOriginalState();
+          if (sel && presentNodeIds().has(sel)) { highlightSelection(sel); }
+        });
+      } catch (err) {
+        console.error('Error:', err);
+        VEBP.announce(statusEl, '');
+        const msg = document.createElement('div');
+        msg.className = 'ebp-notice ebp-notice--accent vebp-stage__message';
+        msg.setAttribute('role', 'alert');
+        msg.textContent = 'Failed to load the Gilman network data.';
+        document.querySelector('.vebp-stage').appendChild(msg);
+      }
+    }
+
+    function clearSelection() {
+      selectedBand = null;
+      if (searchActive) { resetNetwork(); }
+      else { restoreOriginalState(); setSidebarEmpty(); }
+      VEBP.announce(statusEl, 'Selection cleared.');
+    }
+
+    function showDetails(selectedId) {
+      currentSelection = selectedId;
+      detailsBody.textContent = '';
+
+      const h3 = document.createElement('h3');
+      h3.className = 'sidebar-band-name';
+      h3.textContent = selectedId;
+      detailsBody.appendChild(h3);
+
+      const count = showCounts[selectedId] || 0;
+      const badgeRow = document.createElement('div');
+      badgeRow.className = 'sidebar-badges';
+
+      const badge = document.createElement('span');
+      badge.className = 'ebp-tag ebp-tag--accent sidebar-show-count';
+      badge.textContent = count + ' co-performance' + (count === 1 ? '' : 's');
+      badgeRow.appendChild(badge);
+
+      var comm = communityMap[selectedId];
+      if (comm !== undefined) {
+        var commTag = document.createElement('span');
+        commTag.className = 'ebp-tag sidebar-community-tag';
+        var sw = document.createElement('span');
+        sw.className = 'vebp-swatch vebp-swatch--' + commShape(comm);
+        sw.style.setProperty('--swatch', commVar(comm));
+        commTag.appendChild(sw);
+        commTag.appendChild(document.createTextNode('cluster ' + (comm + 1)));
+        badgeRow.appendChild(commTag);
+      }
+      detailsBody.appendChild(badgeRow);
+
+      const desc = document.createElement('p');
+      desc.className = 'sidebar-desc';
+      desc.textContent = 'Performed at 924 Gilman St. between 1986 and 1995';
+      detailsBody.appendChild(desc);
+
+      const connections = originalEdges.filter(function(e) { return e.from === selectedId || e.to === selectedId; })
+        .map(function(e) { return { name: e.from === selectedId ? e.to : e.from, weight: e.weight }; })
+        .sort(function(a, b) { return b.weight - a.weight; });
+
+      if (connections.length > 0) {
+        const h4 = document.createElement('h4');
+        h4.textContent = 'Connections';
+        h4.id = 'conn-h';
+        detailsBody.appendChild(h4);
+        const ul = document.createElement('ul');
+        ul.className = 'gilman-connections';
+        ul.setAttribute('aria-labelledby', 'conn-h');
+        connections.forEach(function(conn) {
+          const li = document.createElement('li');
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          const nameSpan = document.createElement('span');
+          nameSpan.className = 'conn-name';
+          nameSpan.textContent = conn.name;
+          const weightSpan = document.createElement('span');
+          weightSpan.className = 'conn-weight';
+          weightSpan.textContent = conn.weight + (conn.weight === 1 ? ' show' : ' shows');
+          btn.appendChild(nameSpan);
+          btn.appendChild(weightSpan);
+          btn.addEventListener('click', function() {
+            searchInput.value = conn.name;
+            filterNetwork(conn.name.toLowerCase());
+            document.getElementById('details-h').scrollIntoView({ block: 'nearest' });
+          });
+          li.appendChild(btn);
+          ul.appendChild(li);
+        });
+        detailsBody.appendChild(ul);
+      }
+
+      const clear = document.createElement('button');
+      clear.type = 'button';
+      clear.className = 'ebp-btn ebp-btn--ghost ebp-btn--sm';
+      clear.textContent = 'Clear selection';
+      clear.addEventListener('click', clearSelection);
+      detailsBody.appendChild(clear);
+
+      VEBP.announce(statusEl, selectedId + ': ' + count + ' co-performance' + (count === 1 ? '' : 's') +
+        (comm !== undefined ? ', cluster ' + (comm + 1) : '') + ', ' + connections.length + ' connected band' + (connections.length === 1 ? '' : 's') + '. Details below.');
+    }
+
+    VEBP.combobox(searchInput, {
+      listLabel: 'Matching bands',
+      noun: 'band',
+      source: query => bandNames.filter(name => name.toLowerCase().includes(query.toLowerCase())).slice(0, 10),
+      onSelect: s => filterNetwork(s.toLowerCase()),
+      onEnter: value => filterNetwork(value.toLowerCase())
+    });
+
+    function filterNetwork(searchTerm) {
+      const found = originalNodes.find(n => n.label.toLowerCase() === searchTerm);
+      if (!found) {
+        if (searchTerm) VEBP.announce(statusEl, 'No band named “' + searchInput.value.trim() + '”. Choose a name from the suggestions.');
+        return;
+      }
+      searchActive = true;
+      selectedBand = found.id;
+      const connectedBands = new Set([found.id]);
+      const connectedEdges = originalEdges.filter(edge => {
+        if (edge.from === found.id) { connectedBands.add(edge.to); return true; }
+        if (edge.to === found.id) { connectedBands.add(edge.from); return true; }
+        return false;
+      });
+      allNodes = originalNodes.filter(n => connectedBands.has(n.id));
+      allEdges = connectedEdges;
+      network.setData({ nodes: new vis.DataSet(allNodes), edges: new vis.DataSet(allEdges) });
+      network.setOptions({ physics: { enabled: true, stabilization: { enabled: true, iterations: 150 }, barnesHut: { gravitationalConstant: -6000, springLength: 300, avoidOverlap: 0.8 } } });
+      network.once('stabilizationIterationsDone', function() {
+        network.setOptions({ physics: false });
+        network.fit({ nodes: allNodes.map(function(n) { return n.id; }), animation: reduced ? false : { duration: 400, easingFunction: 'easeOutQuad' } });
+      });
+      showDetails(found.id);
+    }
+
+    function resetNetwork() {
+      searchActive = false;
+      selectedBand = null;
+      allNodes = [...originalNodes];
+      allEdges = [...originalEdges];
+      searchInput.value = '';
+      if (network) {
+        network.setData({ nodes: new vis.DataSet(allNodes), edges: new vis.DataSet(allEdges) });
+        network.setOptions({ physics: false });
+        if (initialView && initialScale) network.moveTo({ position: initialView, scale: initialScale, animation: false });
+      }
+      setSidebarEmpty();
+    }
+
+    function exportPNG() {
+      const canvas = document.querySelector('#network-container canvas');
+      if (canvas) {
+        const link = document.createElement('a');
+        link.href = canvas.toDataURL('image/png');
+        link.download = 'gilman-network.png';
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+      } else {
+        VEBP.announce(statusEl, "Export failed: Unable to locate the network canvas.");
+      }
+    }
+
+    function zoomBy(f) {
+      if (!network) return;
+      network.moveTo({ scale: network.getScale() * f, animation: reduced ? false : { duration: 200, easingFunction: 'easeOutQuad' } });
+    }
+
+    const helpOverlay = VEBP.dialog(document.getElementById('helpOverlay'));
+    document.getElementById('help-btn').addEventListener('click', e => VEBP.openDialog(helpOverlay, e.currentTarget));
+    document.getElementById('reset-btn').addEventListener('click', () => { resetNetwork(); VEBP.announce(statusEl, 'Showing the full network.'); });
+    document.getElementById('export-btn').addEventListener('click', exportPNG);
+    document.getElementById('zoom-in').addEventListener('click', () => zoomBy(1.4));
+    document.getElementById('zoom-out').addEventListener('click', () => zoomBy(1 / 1.4));
+    document.getElementById('zoom-fit').addEventListener('click', () => { if (network) network.fit({ animation: reduced ? false : { duration: 300, easingFunction: 'easeOutQuad' } }); });
+
+    init();
+  </script>
+</body>
+</html>

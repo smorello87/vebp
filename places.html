@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en" data-default-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Places – VEBP</title>
+  <meta name="color-scheme" content="light dark">
+  <script>(function(d){var r=d.documentElement,t;try{t=localStorage.getItem("ebp-theme")}catch(e){}if(t!=="light"&&t!=="dark"){t=r.getAttribute("data-default-theme")==="dark"?"dark":"light"}r.setAttribute("data-theme",t);r.classList.add("ebp-js")})(document);</script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-9QR1ELFD27"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-9QR1ELFD27');
+  </script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="shared/core/ebp-core.css">
+  <link rel="stylesheet" href="shared/css/style.css">
+  <style>
+    #map { width: 100%; height: 100%; }
+
+    .place-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--ebp-s-2);
+      margin: 0 0 var(--ebp-s-3);
+      padding: 0;
+      border: 0;
+    }
+    .place-filters legend { float: left; width: 100%; padding: 0; margin-bottom: var(--ebp-s-2); }
+    .place-filters legend + * { clear: both; }
+    .filter-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--ebp-s-2);
+      min-height: var(--ebp-target);
+      padding: 0 var(--ebp-s-3) 0 var(--ebp-s-2);
+      background-color: var(--ebp-surface);
+      color: var(--ebp-ink);
+      border: var(--ebp-rule) solid var(--ebp-border-strong);
+      border-radius: var(--ebp-radius);
+      font-family: var(--ebp-font-mono);
+      font-size: var(--ebp-text-xs);
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      text-align: left;
+    }
+    .filter-btn:hover { border-color: var(--ebp-ink); }
+    .filter-btn .filter-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: none;
+      width: 1.75rem;
+      height: 1.75rem;
+      border-radius: 50%;
+      background-color: var(--ebp-viz-marker-fill);
+      border: 3px solid var(--category-color, var(--ebp-accent));
+    }
+    .filter-btn .filter-icon img { width: 1rem; height: 1rem; }
+    .filter-btn .filter-state { font-weight: 700; }
+    .filter-btn[aria-pressed="true"] {
+      border-color: var(--ebp-ink);
+      box-shadow: inset 0 -3px 0 var(--category-color, var(--ebp-accent));
+    }
+    .filter-btn[aria-pressed="false"] {
+      color: var(--ebp-ink-2);
+      border-style: dashed;
+    }
+    .filter-btn[aria-pressed="false"] .filter-icon { opacity: 0.45; }
+    .filter-btn[aria-pressed="false"] .filter-name { text-decoration: line-through; }
+
+    .place-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      border-top: 1px solid var(--ebp-border);
+    }
+    .place-list li { border-bottom: 1px solid var(--ebp-border); }
+    .place-list button {
+      display: block;
+      width: 100%;
+      min-height: var(--ebp-target);
+      padding: var(--ebp-s-2);
+      background: none;
+      border: 0;
+      color: var(--ebp-ink);
+      text-align: left;
+      font-size: var(--ebp-text-sm);
+      line-height: 1.35;
+    }
+    .place-list button:hover { background-color: var(--ebp-surface-2); }
+    .place-list button:hover .place-list__name { text-decoration: underline; }
+    .place-list__name { display: block; font-weight: 600; }
+    .place-list__meta { display: block; font-family: var(--ebp-font-mono); font-size: var(--ebp-text-xs); color: var(--ebp-ink-2); }
+  </style>
+</head>
+<body class="vebp-app">
+  <a class="ebp-skip" href="#content">Skip to main content</a>
+  <div id="nav-placeholder" class="vebp-header-slot"><noscript>
+<header class="ebp-header">
+  <div class="ebp-header__bar">
+    <a class="ebp-brand" href="https://eastbaypunkda.com/"><img class="ebp-brand__logo" src="shared/core/img/logo.png" alt="" width="60" height="40"><span class="ebp-brand__name">East Bay Punk <span>Digital Archive</span></span></a>
+    <nav id="ebp-nav" class="ebp-nav" aria-label="Main">
+      <ul class="ebp-nav__list">
+        <li><a href="https://eastbaypunkda.com/s/east-bay-punk-digital-archive/item-set">Collections</a></li>
+        <li><a href="https://eastbaypunkda.com/s/east-bay-punk-digital-archive/item">Items</a></li>
+        <li><a href="https://eastbaypunkda.com/vebp/" aria-current="true">VEBP</a></li>
+        <li><a href="https://eastbaypunkda.com/toolkit/">Toolkit</a></li>
+        <li><a href="https://eastbaypunkda.com/s/east-bay-punk-digital-archive/page/ethics">Ethics</a></li>
+        <li><a href="https://eastbaypunkda.com/s/east-bay-punk-digital-archive/page/about">About</a></li>
+      </ul>
+    </nav>
+  </div>
+  <nav class="ebp-subnav" aria-label="Visualizing East Bay Punk">
+    <a class="ebp-subnav__title" href="index.html">Visualizing East Bay Punk</a>
+    <ul class="ebp-subnav__list">
+      <li><a href="people.html">People</a></li>
+      <li><a href="places.html" aria-current="page">Places</a></li>
+      <li><a href="words.html">Words</a></li>
+      <li><a href="shows.html">Shows</a></li>
+      <li><a href="gilman.html">Gilman</a></li>
+    </ul>
+  </nav>
+</header>
+</noscript></div>
+
+  <main id="content" tabindex="-1" class="vebp-app__main">
+    <div class="vebp-side">
+      <h1>Places</h1>
+      <div class="vebp-summary">
+        <p>Interactive map of punk venues, cultural hotspots, and counter-infrastructural nodes.</p>
+        <details class="vebp-howto">
+          <summary>How to use this visualization</summary>
+          <ul>
+            <li>Each marker is a place; its icon and the label in its popup give the kind of place (venue, punk house, label…).</li>
+            <li>Search by name or address, or switch categories on and off. The count below updates as you filter.</li>
+            <li>The list of places under the filters mirrors the map: choose a place to zoom to it and open its details.</li>
+            <li>On the map, drag or use the arrow keys to pan, and the + and &minus; buttons or keys to zoom. Markers can be reached with Tab.</li>
+          </ul>
+        </details>
+      </div>
+
+      <button type="button" class="ebp-btn vebp-toggle" id="legend-toggle" aria-expanded="false"><span class="vebp-toggle__label">Show search and filters</span></button>
+      <div id="controls" class="vebp-collapsible">
+        <h2 class="vebp-panel-h">Search</h2>
+        <div class="ebp-field vebp-combo" id="search-container">
+          <label for="search-box">Search places</label>
+          <input type="search" id="search-box" placeholder="Name or address">
+        </div>
+
+        <fieldset class="place-filters" id="filter-panel">
+          <legend class="vebp-panel-h">Categories</legend>
+        </fieldset>
+        <p class="vebp-status" id="place-status" role="status" aria-live="polite"></p>
+
+        <details class="vebp-howto" id="place-list-wrap">
+          <summary id="place-list-summary">List of places</summary>
+          <ul class="place-list" id="place-list" aria-labelledby="place-list-summary"></ul>
+        </details>
+      </div>
+    </div>
+
+    <div class="vebp-stage" id="map-container">
+      <div id="map" role="region" aria-label="Map of East Bay punk places"></div>
+    </div>
+  </main>
+
+  <div id="footer-placeholder" class="vebp-footer-slot"><noscript>
+<footer class="ebp-footer">
+  <p>The <strong>East Bay Punk Digital Archive</strong> is curated by <a href="https://stefanomorello.com">Stefano Morello</a>. Visualizing East Bay Punk &copy; 2025 Stefano Morello. <a href="https://github.com/smorello87/vebp">Source code on GitHub</a>.</p>
+</footer>
+</noscript></div>
+  <script src="shared/core/ebp-core.js"></script>
+  <script src="shared/js/vebp.js"></script>
+  <script src="shared/js/components.js"></script>
+  <script>
+    /* Marker ring colours point at the chart tokens, so they follow the theme. The icon and
+       the text label are the primary cues; colour only reinforces them. */
+    const CATEGORIES = {
+      'Venue':         { color: 'var(--ebp-viz-band)', icon: 'venue.png' },
+      'Punk House':    { color: 'var(--ebp-viz-1)', icon: 'punkhouses.png' },
+      'Retail':        { color: 'var(--ebp-viz-2)', icon: 'retail.png' },
+      'Hangout':       { color: 'var(--ebp-viz-4)', icon: 'hangout.png' },
+      'Label':         { color: 'var(--ebp-viz-5)', icon: 'vinyl.png' },
+      'Education':     { color: 'var(--ebp-viz-7)', icon: 'education.png' },
+      'Radio Station': { color: 'var(--ebp-viz-3)', icon: 'radio.png' },
+      'Studio':        { color: 'var(--ebp-viz-6)', icon: 'studios.png' },
+      'Art Gallery':   { color: 'var(--ebp-viz-3)', icon: 'art-gallery.png' },
+      'Support':       { color: 'var(--ebp-viz-6)', icon: 'support.png' },
+      'Business':      { color: 'var(--ebp-viz-8)', icon: 'others.png' }
+    };
+
+    /* Basemap: same provider and key as before; light_all is the paper-mode twin of dark_all. */
+    const TILE_URL_DARK = 'https://basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png?key=cb1_4r19_1_b3d09d5fdf41428616d194f9';
+    const TILE_URL_LIGHT = TILE_URL_DARK.replace('/dark_all/', '/light_all/');
+    const tileUrl = () => (VEBP.theme() === 'light' ? TILE_URL_LIGHT : TILE_URL_DARK);
+
+    const reduced = VEBP.reducedMotion();
+    const statusEl = document.getElementById('place-status');
+    const listEl = document.getElementById('place-list');
+    const listSummary = document.getElementById('place-list-summary');
+    let map, tiles, allMarkers = [], activeFilters = new Set(Object.keys(CATEGORIES));
+
+    VEBP.disclosure(document.getElementById('legend-toggle'), document.getElementById('controls'), { open: 'Hide search and filters', closed: 'Show search and filters' });
+
+    function initMap() {
+      map = L.map('map', {
+        center: [37.84, -122.28],
+        zoom: 12,
+        zoomControl: true,
+        zoomAnimation: !reduced,
+        fadeAnimation: !reduced,
+        markerZoomAnimation: !reduced
+      });
+
+      tiles = L.tileLayer(tileUrl(), {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+        maxZoom: 19
+      }).addTo(map);
+
+      VEBP.onThemeChange(() => tiles.setUrl(tileUrl()));
+
+      /* Keep Leaflet in step with the layout (header injected, panel toggled, resize). */
+      if (window.ResizeObserver) new ResizeObserver(() => map.invalidateSize()).observe(document.getElementById('map-container'));
+
+      buildFilterPanel();
+      loadLocations();
+    }
+
+    function buildFilterPanel() {
+      const panel = document.getElementById('filter-panel');
+      Object.entries(CATEGORIES).forEach(([kind, info]) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'filter-btn active';
+        btn.setAttribute('aria-pressed', 'true');
+        btn.style.setProperty('--category-color', info.color);
+        btn.dataset.kind = kind;
+
+        const dot = document.createElement('span');
+        dot.className = 'filter-icon';
+        const img = document.createElement('img');
+        img.src = 'shared/img/map-icons/' + info.icon;
+        img.alt = '';
+        dot.appendChild(img);
+        btn.appendChild(dot);
+
+        const label = document.createElement('span');
+        label.className = 'filter-name';
+        label.textContent = kind;
+        btn.appendChild(label);
+
+        const count = document.createElement('span');
+        count.className = 'filter-count';
+        btn.appendChild(count);
+
+        btn.addEventListener('click', () => toggleFilter(kind, btn));
+        panel.appendChild(btn);
+      });
+    }
+
+    function updateFilterCounts() {
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        const n = allMarkers.filter(m => m.kind === btn.dataset.kind).length;
+        btn.querySelector('.filter-count').textContent = '(' + n + ')';
+      });
+    }
+
+    function toggleFilter(kind, btn) {
+      if (activeFilters.has(kind)) {
+        activeFilters.delete(kind);
+        btn.classList.remove('active');
+        btn.setAttribute('aria-pressed', 'false');
+      } else {
+        activeFilters.add(kind);
+        btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
+      }
+      applyFilters();
+    }
+
+    function applyFilters() {
+      const searchTerm = document.getElementById('search-box').value.toLowerCase();
+      const visible = [];
+      allMarkers.forEach(item => {
+        const kindMatch = activeFilters.has(item.kind);
+        const searchMatch = !searchTerm || item.name.toLowerCase().includes(searchTerm) || item.place.toLowerCase().includes(searchTerm);
+        if (kindMatch && searchMatch) {
+          if (!map.hasLayer(item.marker)) map.addLayer(item.marker);
+          visible.push(item);
+        } else {
+          if (map.hasLayer(item.marker)) map.removeLayer(item.marker);
+        }
+      });
+      renderList(visible);
+      VEBP.announce(statusEl, 'Showing ' + visible.length + ' of ' + allMarkers.length + ' places.');
+    }
+
+    /* Text/keyboard alternative to the markers: the places currently on the map. */
+    function renderList(items) {
+      listEl.textContent = '';
+      listSummary.textContent = 'List of places shown (' + items.length + ')';
+      const frag = document.createDocumentFragment();
+      items.slice().sort((a, b) => a.name.localeCompare(b.name)).forEach(item => {
+        const li = document.createElement('li');
+        const b = document.createElement('button');
+        b.type = 'button';
+        const n = document.createElement('span');
+        n.className = 'place-list__name';
+        n.textContent = item.name;
+        const m = document.createElement('span');
+        m.className = 'place-list__meta';
+        m.textContent = item.kind + ' — ' + item.place;
+        b.appendChild(n); b.appendChild(m);
+        b.addEventListener('click', () => selectPlace(item));
+        li.appendChild(b);
+        frag.appendChild(li);
+      });
+      listEl.appendChild(frag);
+    }
+
+    function createMarker(name, place, kind, lat, lng) {
+      const info = CATEGORIES[kind] || CATEGORIES['Business'];
+      const iconHtml = document.createElement('div');
+      iconHtml.className = 'map-marker';
+      iconHtml.style.setProperty('--marker-color', info.color);
+
+      const img = document.createElement('img');
+      img.src = 'shared/img/map-icons/' + info.icon;
+      img.alt = '';
+      iconHtml.appendChild(img);
+
+      const divIcon = L.divIcon({
+        html: iconHtml.outerHTML,
+        className: '',
+        iconSize: [38, 38],
+        iconAnchor: [19, 19],
+        popupAnchor: [0, -21]
+      });
+
+      const marker = L.marker([lat, lng], { icon: divIcon, title: name + ' (' + kind + ')', keyboard: true });
+      marker.on('add', () => {
+        const el = marker.getElement();
+        if (el) { el.setAttribute('aria-label', name + ', ' + kind); el.setAttribute('role', 'button'); }
+      });
+
+      const popupContent = document.createElement('div');
+
+      const nameEl = document.createElement('div');
+      nameEl.className = 'popup-name';
+      nameEl.textContent = name;
+      popupContent.appendChild(nameEl);
+
+      const addrEl = document.createElement('div');
+      addrEl.className = 'popup-address';
+      addrEl.textContent = place;
+      popupContent.appendChild(addrEl);
+
+      const kindEl = document.createElement('span');
+      kindEl.className = 'popup-kind';
+      kindEl.textContent = kind;
+      kindEl.style.setProperty('--category-color', info.color);
+      popupContent.appendChild(kindEl);
+
+      marker.bindPopup(popupContent, { maxWidth: 250 });
+      return marker;
+    }
+
+    async function loadLocations() {
+      VEBP.announce(statusEl, 'Loading places…');
+      try {
+        const response = await fetch('data/locations.csv');
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const text = await response.text();
+        const lines = text.split('\n').filter(l => l.trim());
+
+        // Skip header
+        for (let i = 1; i < lines.length; i++) {
+          const parsed = parseCSVLine(lines[i]);
+          if (parsed.length < 5) continue;
+
+          const name = parsed[0].trim();
+          const place = parsed[1].trim();
+          const kind = parsed[2].trim();
+          const lat = parseFloat(parsed[3]);
+          const lng = parseFloat(parsed[4]);
+
+          if (!name || isNaN(lat) || isNaN(lng)) continue;
+
+          const marker = createMarker(name, place, kind, lat, lng);
+          marker.addTo(map);
+          allMarkers.push({ marker, name, place, kind });
+        }
+        updateFilterCounts();
+        applyFilters();
+      } catch (err) {
+        console.error('Failed to load locations:', err);
+        VEBP.announce(statusEl, '');
+        const errDiv = document.createElement('div');
+        errDiv.className = 'ebp-notice ebp-notice--accent vebp-stage__message';
+        errDiv.setAttribute('role', 'alert');
+        errDiv.textContent = 'Failed to load location data.';
+        document.getElementById('map-container').appendChild(errDiv);
+      }
+    }
+
+    function parseCSVLine(line) {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+          if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (ch === ',' && !inQuotes) {
+          result.push(current);
+          current = '';
+        } else {
+          current += ch;
+        }
+      }
+      result.push(current);
+      return result;
+    }
+
+    const searchBox = document.getElementById('search-box');
+    searchBox.addEventListener('input', applyFilters);
+    VEBP.combobox(searchBox, {
+      minChars: 2,
+      listLabel: 'Matching places',
+      noun: 'place',
+      source: query => {
+        const q = query.toLowerCase();
+        return allMarkers.filter(m => m.name.toLowerCase().includes(q) || m.place.toLowerCase().includes(q)).slice(0, 8).map(m => m.name);
+      },
+      onSelect: name => { const m = allMarkers.find(x => x.name === name); if (m) selectPlace(m); },
+      onEnter: value => {
+        const val = value.toLowerCase();
+        const match = allMarkers.find(m => m.name.toLowerCase() === val);
+        if (match) selectPlace(match);
+      }
+    });
+
+    function selectPlace(item) {
+      if (!map.hasLayer(item.marker)) map.addLayer(item.marker);
+      map.setView(item.marker.getLatLng(), 16, { animate: !reduced });
+      item.marker.openPopup();
+      VEBP.announce(statusEl, item.name + ' (' + item.kind + '), ' + item.place + ' — shown on the map.');
+    }
+
+    initMap();
+  </script>
+</body>
+</html>

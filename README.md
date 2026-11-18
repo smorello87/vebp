@@ -40,29 +40,36 @@ The suite is built using HTML5, CSS3, JavaScript, D3.js, vis-network, and PHP fo
 
 ```
 vebp/
-├── people/
-│   ├── people.html          # People network visualization 
-│   └── merged-json.json     # JSON data for bands and members
-├── places/
-│   ├── places.html          # Interactive map for scene locations (ArcGIS embedded map)
-│   └── locations_latlong_split.csv   # CSV data with latitude/longitude info
-├── words/
-│   ├── words.html           # Main interface for lyrics visualization and word cloud (d3-cloud)
-│   ├── songs.json           # Album and track data with lyrics for Lookout Records
-│   ├── missing_lyrics.json  # JSON data for tracks missing lyrics
-│   ├── missing-lyrics.html  # Interface to display and invite missing lyrics submissions
-│   ├── api.php              # PHP API file (backend)
-│   ├── getAlbumDetails.php  # PHP API file for album details
-│   ├── getAlbums.php        # PHP API file for albums
-│   ├── getAllTracks.php     # PHP API file for track data
-│   └── ingest.php           # PHP API file for data ingestion   
-├── shows/
-│   ├── shows.html           # Table for Bay Area punk events search with filters & pagination
-│   └── events.json          # JSON file with event data 
-├── gilman/
-│   ├── gilman.html          # Network visualization for 924 Gilman shows (vis-network)
-│   └── weighted-bands.csv   # CSV file with weighted data on band performances at Gilman                   # 
+├── index.html, people.html, places.html, words.html, shows.html, gilman.html, missing-lyrics.html
+├── shared/
+│   ├── core/                # Shared East Bay Punk design system (do not edit here):
+│   │                        #   ebp-core.css (light/dark colour tokens, type, header, footer, components),
+│   │                        #   ebp-core.js (light/dark toggle, mobile menu), self-hosted fonts, logos
+│   ├── css/style.css        # VEBP layer on top of the core: layout, chart colour tokens, controls
+│   ├── js/components.js     # Loads the shared header and footer into each page
+│   ├── js/vebp.js           # Chart palette from CSS variables, dialogs, autocomplete, live regions
+│   ├── components/          # nav.html and footer.html
+│   └── img/                 # Logo and map category icons
+├── data/
+│   ├── merged-json.json     # Bands and members (People)
+│   ├── locations.csv        # Places with latitude/longitude (Places)
+│   ├── events.json          # Bay Area punk shows (Shows)
+│   ├── weighted-bands.csv   # Shared bills at 924 Gilman (Gilman)
+│   ├── songs.json           # Lookout Records albums, tracks and lyrics (Words)
+│   └── missing_lyrics.json  # Tracks still missing lyrics
+└── api/                     # PHP + MySQL backend for Words
+    ├── db-config.example.php   # copy to db-config.php and add your database details
+    ├── api.php, getAlbums.php, getAlbumDetails.php, getAllTracks.php
+    └── ingest-nml.php          # command line only: loads data/songs.json into the database
 ```
+
+### 2026 redesign
+
+The suite now shares one design system with the [East Bay Punk Digital Archive](https://eastbaypunkda.com)
+and the [Punk Archiving Toolkit](https://eastbaypunkda.com/toolkit/): a common header and footer, light
+and dark modes (light by default, with a toggle), and an accessibility pass aimed at WCAG 2.2 AA. Every
+visualization has a text summary, labelled keyboard-operable controls, live result counts, and colours
+that switch with the mode. Animated layouts are pre-settled when the visitor prefers reduced motion.
 
 ---
 

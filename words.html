@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en" data-default-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Words – VEBP</title>
+  <meta name="color-scheme" content="light dark">
+  <script>(function(d){var r=d.documentElement,t;try{t=localStorage.getItem("ebp-theme")}catch(e){}if(t!=="light"&&t!=="dark"){t=r.getAttribute("data-default-theme")==="dark"?"dark":"light"}r.setAttribute("data-theme",t);r.classList.add("ebp-js")})(document);</script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-9QR1ELFD27"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-9QR1ELFD27');
+  </script>
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-cloud/1.2.5/d3.layout.cloud.min.js"></script>
+  <link rel="stylesheet" href="shared/core/ebp-core.css">
+  <link rel="stylesheet" href="shared/css/style.css">
+  <style>
+    /* Tabs */
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0 var(--ebp-s-1);
+      margin: 0 0 var(--ebp-s-5);
+      border-bottom: var(--ebp-rule) solid var(--ebp-ink);
+    }
+    .tab-btn {
+      display: inline-flex;
+      align-items: center;
+      min-height: var(--ebp-target);
+      margin-bottom: calc(-1 * var(--ebp-rule));
+      padding: 0 var(--ebp-s-4);
+      background-color: transparent;
+      color: var(--ebp-ink);
+      border: var(--ebp-rule) solid transparent;
+      border-bottom: 0;
+      border-radius: var(--ebp-radius) var(--ebp-radius) 0 0;
+      font-family: var(--ebp-font-mono);
+      font-size: var(--ebp-text-sm);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+    }
+    .tab-btn:hover { text-decoration: underline; text-decoration-color: var(--ebp-accent); text-decoration-thickness: 3px; text-underline-offset: 0.35em; }
+    .tab-btn[aria-selected="true"] {
+      background-color: var(--ebp-surface);
+      color: var(--ebp-accent);
+      border-color: var(--ebp-ink);
+      box-shadow: inset 0 3px 0 var(--ebp-accent);
+    }
+    .tab-pane:focus-visible { outline-offset: 4px; }
+
+    .section-card p { max-width: var(--ebp-measure); }
+
+    /* Word cloud & network containers */
+    .viz-container {
+      position: relative;
+      min-height: 400px;
+      overflow: hidden;
+      background-color: var(--ebp-bg);
+      border: var(--ebp-rule) solid var(--ebp-ink);
+      border-radius: var(--ebp-radius);
+    }
+    .viz-container.small { min-height: 300px; height: 300px; }
+    #albumNetwork { min-height: 500px; height: 500px; }
+    .network-container { min-height: 700px; height: 700px; }
+    .viz-container.is-empty,
+    .viz-container.has-error { min-height: 0; height: auto; }
+    .viz-container.is-empty { padding: var(--ebp-s-4); color: var(--ebp-ink-2); }
+    .viz-container.has-error { border: 0; background: none; }
+    .viz-container.has-error .ebp-notice { margin: 0; }
+    .viz-container svg { display: block; }
+
+    .fullscreen-btn { position: absolute; top: var(--ebp-s-2); right: var(--ebp-s-2); z-index: 10; }
+    .viz-container.fullscreen {
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      width: 100vw;
+      height: 100vh;
+      min-height: unset;
+      border: 0;
+      border-radius: 0;
+    }
+    .viz-container.fullscreen .fullscreen-btn { top: var(--ebp-s-4); right: var(--ebp-s-4); }
+
+    .album-field { max-width: 30rem; }
+    #albumDetails { margin-top: var(--ebp-s-4); }
+    #trackList { list-style: none; padding: 0; margin: var(--ebp-s-3) 0; border-top: 1px solid var(--ebp-border); }
+    #trackList li { padding: var(--ebp-s-2) 0; border-bottom: 1px solid var(--ebp-border); font-size: var(--ebp-text-sm); }
+    #trackList li strong { color: var(--ebp-ink); }
+
+    #randomLyrics { min-height: 200px; margin-top: var(--ebp-s-4); padding: var(--ebp-s-5); font-size: var(--ebp-text-lg); line-height: 1.8; }
+    #randomLyrics p { font-style: italic; max-width: none; margin: 0; }
+
+    /* Keyboard / screen-reader alternatives to clicking inside the cloud */
+    .word-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--ebp-s-2);
+      margin: var(--ebp-s-3) 0 var(--ebp-s-4);
+      padding: 0;
+      list-style: none;
+    }
+    .word-list li { margin: 0; }
+    .word-list .ebp-tag { text-transform: none; letter-spacing: 0; font-size: var(--ebp-text-sm); }
+    .word-list .ebp-tag .word-count { color: inherit; opacity: 1; font-size: var(--ebp-text-xs); }
+    .assoc-summary { margin-top: var(--ebp-s-3); }
+
+    @media (max-width: 47.999rem) {
+      .tab-btn { padding: 0 var(--ebp-s-3); font-size: var(--ebp-text-xs); }
+      .viz-container { min-height: 250px; }
+      .network-container { min-height: 450px; height: 450px; }
+      #albumNetwork { min-height: 350px; height: 350px; }
+      .vebp-panel { padding: var(--ebp-s-4); }
+    }
+  </style>
+</head>
+<body>
+  <a class="ebp-skip" href="#content">Skip to main content</a>
+  <div id="nav-placeholder" class="vebp-header-slot"><noscript>
+<header class="ebp-header">
+  <div class="ebp-header__bar">
+    <a class="ebp-brand" href="https://eastbaypunkda.com/"><img class="ebp-brand__logo" src="shared/core/img/logo.png" alt="" width="60" height="40"><span class="ebp-brand__name">East Bay Punk <span>Digital Archive</span></span></a>
+    <nav id="ebp-nav" class="ebp-nav" aria-label="Main">
+      <ul class="ebp-nav__list">
+        <li><a href="https://eastbaypunkda.com/s/east-bay-punk-digital-archive/item-set">Collections</a></li>
+        <li><a href="https://eastbaypunkda.com/s/east-bay-punk-digital-archive/item">Items</a></li>
+        <li><a href="https://eastbaypunkda.com/vebp/" aria-current="true">VEBP</a></li>
+        <li><a href="https://eastbaypunkda.com/toolkit/">Toolkit</a></li>
+        <li><a href="https://eastbaypunkda.com/s/east-bay-punk-digital-archive/page/ethics">Ethics</a></li>
+        <li><a href="https://eastbaypunkda.com/s/east-bay-punk-digital-archive/page/about">About</a></li>
+      </ul>
+    </nav>
+  </div>
+  <nav class="ebp-subnav" aria-label="Visualizing East Bay Punk">
+    <a class="ebp-subnav__title" href="index.html">Visualizing East Bay Punk</a>
+    <ul class="ebp-subnav__list">
+      <li><a href="people.html">People</a></li>
+      <li><a href="places.html">Places</a></li>
+      <li><a href="words.html" aria-current="page">Words</a></li>
+      <li><a href="shows.html">Shows</a></li>
+      <li><a href="gilman.html">Gilman</a></li>
+    </ul>
+  </nav>
+</header>
+</noscript></div>
+
+  <main id="content" tabindex="-1" class="vebp-main vebp-main--mid">
+    <h1 class="page-title">Lookout Records Lyrics</h1>
+
+    <div class="tabs" role="tablist" aria-label="Lyrics views">
+      <button type="button" class="tab-btn active" role="tab" id="tab-dashboard" aria-controls="dashboard" aria-selected="true" data-tab="dashboard">All Records</button>
+      <button type="button" class="tab-btn" role="tab" id="tab-album" aria-controls="album" aria-selected="false" tabindex="-1" data-tab="album">Individual Records</button>
+      <button type="button" class="tab-btn" role="tab" id="tab-randomizer" aria-controls="randomizer" aria-selected="false" tabindex="-1" data-tab="randomizer">Randomizer</button>
+      <button type="button" class="tab-btn" role="tab" id="tab-help" aria-controls="help" aria-selected="false" tabindex="-1" data-tab="help">Help</button>
+    </div>
+
+    <!-- Dashboard Tab -->
+    <div class="tab-pane active" id="dashboard" role="tabpanel" aria-labelledby="tab-dashboard" tabindex="0">
+      <div class="section-card vebp-panel">
+        <p>Word cloud built from all Lookout Records lyrics (1987&ndash;1994). Click a word to see its associations in the network graph below.</p>
+        <div id="dashboardWordCloud" class="viz-container"><p class="loading" style="padding: var(--ebp-s-4); margin: 0;">Loading lyrics…</p></div>
+        <div id="dashboardWordList"></div>
+        <h2 class="section-label" id="network-h">Word Association Network</h2>
+        <div id="networkGraph" class="viz-container network-container is-empty">Choose a word in the cloud or in the list above to see the words that appear near it.</div>
+        <div id="networkList" class="assoc-summary" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <!-- Album Tab -->
+    <div class="tab-pane" id="album" role="tabpanel" aria-labelledby="tab-album" tabindex="0" hidden>
+      <div class="section-card vebp-panel">
+        <p>Select a release to view its tracks and a word cloud generated from its lyrics.</p>
+        <div class="ebp-field album-field">
+          <label for="albumSelect">Release</label>
+          <select id="albumSelect">
+            <option value="">-- Choose an Album --</option>
+          </select>
+        </div>
+        <div id="albumMessage"></div>
+        <div id="albumDetails" hidden>
+          <h2 id="albumTitle"></h2>
+          <p id="albumYear"></p>
+          <h3 class="section-label">Tracks</h3>
+          <ul id="trackList"></ul>
+          <h3 class="section-label">Album Word Cloud</h3>
+          <div id="albumWordCloud" class="viz-container small"></div>
+          <div id="albumWordList"></div>
+          <h3 class="section-label">Album Word Associations</h3>
+          <div id="albumNetwork" class="viz-container small is-empty">Choose a word in the album cloud or list to see its associations.</div>
+          <div id="albumNetworkList" class="assoc-summary" aria-live="polite"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Randomizer Tab -->
+    <div class="tab-pane" id="randomizer" role="tabpanel" aria-labelledby="tab-randomizer" tabindex="0" hidden>
+      <div class="section-card vebp-panel">
+        <p>Generate a random mashup of lyric lines from across the Lookout dataset.</p>
+        <button type="button" id="generateRandomBtn" class="ebp-btn ebp-btn--primary">Generate</button>
+        <div id="randomLyrics" class="viz-container small" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <!-- Help Tab -->
+    <div class="tab-pane" id="help" role="tabpanel" aria-labelledby="tab-help" tabindex="0" hidden>
+      <div class="section-card vebp-panel ebp-prose">
+        <h2>Overview</h2>
+        <p>This application visualizes lyrics from all Lookout Records releases from 1987 to 1994.</p>
+        <p>The <strong>All Records</strong> tab provides a word cloud of the overall corpus; clicking on a word shows its associations in a network graph.</p>
+        <p>The <strong>Individual Records</strong> tab lets you select a release to view its tracks, word cloud, and word association network.</p>
+        <p>The <strong>Randomizer</strong> generates a mashup of lyric lines from across the dataset.</p>
+        <p>Below each word cloud, the most frequent words are also listed as buttons, and each association network is summarised as a list, so everything can be explored with a keyboard or screen reader.</p>
+
+        <h2>The Dataset</h2>
+        <p>Lyrics were transcribed from liner notes or scraped from <a href="https://genius.com">Genius.com</a>, <a href="https://plyrics.com">Plyrics</a>, and <a href="https://www.letras.com/">Letras.com</a>.</p>
+
+        <h2>Missing Lyrics</h2>
+        <p><a href="missing-lyrics.html">See the tracks with missing lyrics</a>. If you have access to them, please <a href="mailto:veritas44@gmail.com">get in touch!</a></p>
+      </div>
+    </div>
+  </main>
+
+  <div id="footer-placeholder" class="vebp-footer-slot"><noscript>
+<footer class="ebp-footer">
+  <p>The <strong>East Bay Punk Digital Archive</strong> is curated by <a href="https://stefanomorello.com">Stefano Morello</a>. Visualizing East Bay Punk &copy; 2025 Stefano Morello. <a href="https://github.com/smorello87/vebp">Source code on GitHub</a>.</p>
+</footer>
+</noscript></div>
+  <script src="shared/core/ebp-core.js"></script>
+  <script src="shared/js/vebp.js"></script>
+  <script src="shared/js/components.js"></script>
+  <script>
+    const reduced = VEBP.reducedMotion();
+
+    /* ---- Tabs (ARIA tabs: arrow keys, Home/End) ---------------------------- */
+    const tabs = Array.from(document.querySelectorAll('.tab-btn'));
+    function activateTab(btn, focus) {
+      tabs.forEach(b => {
+        const on = b === btn;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+        b.tabIndex = on ? 0 : -1;
+        const pane = document.getElementById(b.dataset.tab);
+        pane.classList.toggle('active', on);
+        pane.hidden = !on;
+      });
+      if (focus) btn.focus();
+      if (btn.dataset.tab === 'dashboard') {
+        setTimeout(renderDashboardWordCloud, 100);
+      } else if (btn.dataset.tab === 'randomizer') {
+        loadTracksIfNeeded();
+      }
+    }
+    tabs.forEach((btn, i) => {
+      btn.addEventListener('click', () => activateTab(btn, false));
+      btn.addEventListener('keydown', e => {
+        let j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); activateTab(tabs[j], true); }
+      });
+    });
+
+    // Variables
+    let albumData = [];
+    let trackData = [];
+    let tracksFailed = false;
+    let corpusFreq = {};
+    let albumFreq = {};
+    const stopwords = new Set([
+      "the","and","a","an","of","to","in","that","is","was","for","on","with","as",
+      "by","at","from","or","but","if","then","so","because","about","into","through",
+      "during","before","after","above","below","up","down","out","off","over","under",
+      "again","further","once","here","there","when","where","why","how","all","any",
+      "both","each","few","more","most","other","some","such","no","nor","not","only",
+      "own","same","than","too","very","can","will","just","don","should","now","i","me",
+      "my","we","our","you","your","he","she","it","they","them","his","her","its","their"
+    ]);
+
+    /* Visible, accessible failure message (the Words data comes from the PHP/MySQL API). */
+    function showDataError(target, what, announce) {
+      const el = typeof target === 'string' ? document.querySelector(target) : target;
+      if (!el) return;
+      el.textContent = '';
+      el.classList.remove('is-empty');
+      el.classList.add('has-error');
+      const n = document.createElement('div');
+      n.className = 'ebp-notice ebp-notice--accent';
+      if (announce) n.setAttribute('role', 'alert');
+      const t = document.createElement('strong');
+      t.className = 'ebp-notice__title';
+      t.textContent = 'Lyrics data unavailable';
+      const p = document.createElement('p');
+      p.textContent = what + ' could not be loaded. The Words section reads from the archive’s lyrics database, which is not responding right now. Please try again later.';
+      n.appendChild(t); n.appendChild(p);
+      el.appendChild(n);
+    }
+    function getJSON(url) {
+      return fetch(url).then(r => {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      }).then(data => {
+        /* The API reports failures as {"error": "..."} */
+        if (data && typeof data === 'object' && !Array.isArray(data) && typeof data.error === 'string' && Object.keys(data).length === 1) throw new Error('API error: ' + data.error);
+        return data;
+      });
+    }
+
+    function renderWordCloud(selector, words, onClickWord, listSelector) {
+      const container = d3.select(selector);
+      container.selectAll("*").remove();
+      container.classed('has-error', false).classed('is-empty', false);
+      const width = container.node().clientWidth;
+      const height = container.node().clientHeight || 400;
+      const maxSize = d3.max(words, d => d.size);
+      const sizeScale = d3.scaleLinear().domain([0, maxSize]).range([10, 80]);
+      const wordData = words.map(d => ({ ...d, count: d.size, size: sizeScale(d.size) }));
+
+      d3.layout.cloud()
+        .size([width, height])
+        .words(wordData)
+        .padding(5)
+        .rotate(() => ~~(Math.random() * 2) * 90)
+        .font("Bebas Neue")
+        .fontSize(d => d.size)
+        .on("end", draw)
+        .start();
+
+      function draw(words) {
+        const svg = container.append("svg")
+          .attr("width", width).attr("height", height)
+          .attr("role", "img")
+          .attr("aria-label", "Word cloud of the " + words.length + " most frequent words. The same words are listed as buttons below.");
+        svg.append("g")
+          .attr("transform", "translate(" + width/2 + "," + height/2 + ")")
+          .selectAll("text")
+          .data(words)
+          .enter().append("text")
+          .attr("class", (_, i) => "cloud-word cloud-word--" + (i === 0 ? 0 : (i % 8) + 1))
+          .style("font-size", d => d.size + "px")
+          .style("font-family", "Bebas Neue")
+          .style("cursor", onClickWord ? "pointer" : "default")
+          .attr("text-anchor", "middle")
+          .attr("transform", d => "translate(" + d.x + "," + d.y + ")rotate(" + d.rotate + ")")
+          .text(d => d.text)
+          .on("click", function(event, d) { if (onClickWord) onClickWord(d.text); });
+        if (listSelector) renderWordList(listSelector, wordData, onClickWord);
+      }
+    }
+
+    /* Keyboard alternative to the cloud: the 40 most frequent words as buttons. */
+    function renderWordList(selector, wordData, onClickWord) {
+      const box = document.querySelector(selector);
+      if (!box) return;
+      box.textContent = '';
+      const top = wordData.slice().sort((a, b) => b.count - a.count).slice(0, 40);
+      if (!top.length) return;
+      const h = document.createElement('p');
+      h.className = 'ebp-label';
+      h.id = box.id + '-label';
+      h.textContent = 'Most frequent words' + (onClickWord ? ' — choose one to see its associations' : '');
+      box.appendChild(h);
+      const ul = document.createElement('ul');
+      ul.className = 'word-list';
+      ul.setAttribute('aria-labelledby', h.id);
+      top.forEach(w => {
+        const li = document.createElement('li');
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'ebp-tag';
+        b.textContent = w.text + ' ';
+        const c = document.createElement('span');
+        c.className = 'word-count';
+        c.textContent = '(' + w.count + ')';
+        b.appendChild(c);
+        if (onClickWord) b.addEventListener('click', () => onClickWord(w.text));
+        li.appendChild(b);
+        ul.appendChild(li);
+      });
+      box.appendChild(ul);
+    }
+
+    function processText(text) {
+      const freq = {};
+      text.toLowerCase().replace(/[^a-z0-9\s]/g, "").split(/\s+/)
+        .filter(w => w.length > 2 && !stopwords.has(w))
+        .forEach(w => { freq[w] = (freq[w] || 0) + 1; });
+      return Object.entries(freq).map(([word, count]) => ({ text: word, size: count }));
+    }
+
+    // Dashboard word cloud
+    function renderDashboardWordCloud() {
+      getJSON('api/api.php?task=corpus')
+        .then(freq => {
+          corpusFreq = freq;
+          const words = Object.entries(freq).map(([word, count]) => ({ text: word, size: count }));
+          renderWordCloud("#dashboardWordCloud", words, renderWordAssociationNetwork, "#dashboardWordList");
+        })
+        .catch(err => {
+          console.error("Error loading corpus data", err);
+          showDataError('#dashboardWordCloud', 'The lyrics word cloud', true);
+          document.getElementById('networkGraph').hidden = true;
+          document.getElementById('network-h').hidden = true;
+        });
+    }
+
+    function renderWordAssociationNetwork(selectedWord) {
+      getJSON('api/api.php?task=cooccurrence&word=' + encodeURIComponent(selectedWord))
+        .then(cofreq => {
+          let nodes = Object.entries(cofreq)
+            .filter(([word]) => word !== selectedWord)
+            .map(([word, count]) => ({ id: word, count }));
+          const totalFreq = corpusFreq[selectedWord] || 0;
+          const maxCount = nodes.length > 0 ? Math.max(...nodes.map(n => n.count)) : 0;
+          nodes.unshift({ id: selectedWord, count: maxCount + 10, isCenter: true, freq: totalFreq });
+          const links = nodes.filter(n => !n.isCenter).map(n => ({ source: selectedWord, target: n.id, value: cofreq[n.id] || 1 }));
+          renderNetworkGraph("#networkGraph", nodes, links);
+          renderAssocList("#networkList", selectedWord, totalFreq, nodes, renderWordAssociationNetwork);
+        })
+        .catch(err => { console.error("Error loading word associations", err); showDataError('#networkList', 'Associations for “' + selectedWord + '”', false); });
+    }
+
+    /* Text alternative for an association network. */
+    function renderAssocList(selector, word, freq, nodes, onPick) {
+      const box = document.querySelector(selector);
+      box.textContent = '';
+      box.classList.remove('has-error');
+      const others = nodes.filter(n => !n.isCenter).sort((a, b) => b.count - a.count);
+      const p = document.createElement('p');
+      p.textContent = '“' + word + '” appears ' + (freq || '?') + ' times. ' +
+        (others.length ? 'Words that appear near it, most frequent first (' + others.length + '):' : 'No associated words found.');
+      box.appendChild(p);
+      if (!others.length) return;
+      const ul = document.createElement('ul');
+      ul.className = 'word-list';
+      others.slice(0, 30).forEach(n => {
+        const li = document.createElement('li');
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'ebp-tag';
+        b.textContent = n.id + ' ';
+        const c = document.createElement('span');
+        c.className = 'word-count';
+        c.textContent = '(' + n.count + ')';
+        b.appendChild(c);
+        b.addEventListener('click', () => onPick(n.id));
+        li.appendChild(b);
+        ul.appendChild(li);
+      });
+      box.appendChild(ul);
+    }
+
+    function renderNetworkGraph(selector, nodes, links, focusFsButton) {
+      const container = d3.select(selector);
+      container.selectAll("*").remove();
+      const el = container.node();
+      el.textContent = '';
+      el.classList.remove('is-empty', 'has-error');
+      el.hidden = false;
+
+      // Fullscreen button
+      const fsBtn = document.createElement('button');
+      fsBtn.type = 'button';
+      fsBtn.className = 'ebp-btn ebp-btn--sm fullscreen-btn';
+      fsBtn.textContent = el.classList.contains('fullscreen') ? 'Exit Fullscreen' : 'Fullscreen';
+      if (!el._fsParent) el._fsParent = el.parentNode;
+      if (!el._fsNext) el._fsNext = el.nextSibling;
+      fsBtn.addEventListener('click', function() {
+        const isFs = !el.classList.contains('fullscreen');
+        if (isFs) {
+          el._fsParent = el.parentNode;
+          el._fsNext = el.nextSibling;
+          document.body.appendChild(el);
+          el.classList.add('fullscreen');
+        } else {
+          el.classList.remove('fullscreen');
+          if (el._fsNext) {
+            el._fsParent.insertBefore(el, el._fsNext);
+          } else {
+            el._fsParent.appendChild(el);
+          }
+        }
+        const freshNodes = nodes.map(n => ({ id: n.id, count: n.count, isCenter: n.isCenter, freq: n.freq }));
+        const freshLinks = links.map(l => ({ source: typeof l.source === 'object' ? l.source.id : l.source, target: typeof l.target === 'object' ? l.target.id : l.target, value: l.value }));
+        setTimeout(() => renderNetworkGraph(selector, freshNodes, freshLinks, true), 50);
+      });
+      el.appendChild(fsBtn);
+      if (focusFsButton) fsBtn.focus();
+
+      const width = el.clientWidth;
+      const height = el.clientHeight || 500;
+
+      const center = nodes.find(n => n.isCenter);
+      const svg = container.append("svg")
+        .attr("width", "100%").attr("height", "100%")
+        .attr("viewBox", "0 0 " + width + " " + height)
+        .attr("preserveAspectRatio", "xMidYMid meet")
+        .attr("role", "img")
+        .attr("aria-label", "Network of words that appear near “" + (center ? center.id : '') + "”. The same words are listed below the graph.");
+
+      const simulation = d3.forceSimulation(nodes)
+        .force("link", d3.forceLink(links).id(d => d.id).distance(100))
+        .force("charge", d3.forceManyBody().strength(-200))
+        .force("center", d3.forceCenter(width / 2, height / 2));
+
+      const link = svg.append("g").selectAll("line").data(links).enter().append("line")
+        .attr("class", "assoc-link")
+        .attr("stroke-width", d => Math.sqrt(d.value));
+
+      // Tooltip
+      let tooltip = d3.select("body").select(".network-tooltip");
+      if (tooltip.empty()) {
+        tooltip = d3.select("body").append("div").attr("class", "network-tooltip")
+          .style("opacity", "0");
+      }
+
+      const node = svg.append("g").selectAll("circle").data(nodes).enter().append("circle")
+        .attr("r", d => d.isCenter ? 14 : 5 + d.count / 10)
+        .attr("class", d => d.isCenter ? "assoc-node assoc-node--center" : "assoc-node")
+        .on("mouseover", function(event, d) {
+          const label = d.isCenter ? d.id + " — appears " + (d.freq || "?") + " times" : d.id + " (" + d.count + " co-occurrences)";
+          tooltip.text(label).style("opacity", "1");
+        })
+        .on("mousemove", function(event) {
+          tooltip.style("left", (event.clientX + 12) + "px").style("top", (event.clientY - 10) + "px");
+        })
+        .on("mouseout", function() {
+          tooltip.style("opacity", "0");
+        })
+        .call(d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended));
+
+      const labels = svg.append("g").selectAll("text").data(nodes).enter().append("text")
+        .attr("dy", -10).attr("text-anchor", "middle").text(d => d.id)
+        .attr("class", d => d.isCenter ? "assoc-label assoc-label--center" : "assoc-label");
+
+      function ticked() {
+        link.attr("x1", d => d.source.x).attr("y1", d => d.source.y).attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+        node.attr("cx", d => d.x).attr("cy", d => d.y);
+        labels.attr("x", d => d.x).attr("y", d => d.y);
+
+        // Continuously fit viewBox to node bounds
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        nodes.forEach(d => {
+          minX = Math.min(minX, d.x);
+          minY = Math.min(minY, d.y);
+          maxX = Math.max(maxX, d.x);
+          maxY = Math.max(maxY, d.y);
+        });
+        const pad = 50;
+        svg.attr("viewBox", (minX - pad) + " " + (minY - pad) + " " + (maxX - minX + pad * 2) + " " + (maxY - minY + pad * 2));
+      }
+
+      if (reduced) {
+        /* Reduced motion: settle first, then draw once. */
+        simulation.stop();
+        const n = Math.ceil(Math.log(simulation.alphaMin()) / Math.log(1 - simulation.alphaDecay()));
+        for (let i = 0; i < n; i++) simulation.tick();
+        ticked();
+      } else {
+        simulation.on("tick", ticked);
+      }
+
+      function dragstarted(event, d) { if (reduced) return; if (!event.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; }
+      function dragged(event, d) { if (reduced) { d.x = event.x; d.y = event.y; ticked(); return; } d.fx = event.x; d.fy = event.y; }
+      function dragended(event, d) { if (reduced) return; if (!event.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; }
+    }
+
+    // Album analysis
+    getJSON('api/getAlbums.php')
+      .then(data => { albumData = data; populateAlbumSelect(); })
+      .catch(err => {
+        console.error("Error loading albums", err);
+        const select = document.getElementById('albumSelect');
+        select.textContent = '';
+        const opt = document.createElement('option');
+        opt.value = ''; opt.textContent = 'Releases unavailable';
+        select.appendChild(opt);
+        select.disabled = true;
+        showDataError('#albumMessage', 'The list of releases', false);
+      });
+
+    function populateAlbumSelect() {
+      const select = document.getElementById('albumSelect');
+      select.textContent = '';
+      const defaultOpt = document.createElement('option');
+      defaultOpt.value = ''; defaultOpt.textContent = '-- Choose an Album --';
+      select.appendChild(defaultOpt);
+      albumData.forEach(album => {
+        const opt = document.createElement('option');
+        opt.value = album.id;
+        let artist = album.artists;
+        if (artist && artist.indexOf(',') !== -1) artist = "Various Artists";
+        opt.textContent = album.title + ' (' + artist + ')';
+        select.appendChild(opt);
+      });
+    }
+
+    document.getElementById('albumSelect').addEventListener('change', function() {
+      const albumId = this.value;
+      document.getElementById('albumMessage').textContent = '';
+      if (!albumId) { document.getElementById('albumDetails').hidden = true; return; }
+      getJSON('api/getAlbumDetails.php?id=' + encodeURIComponent(albumId))
+        .then(data => {
+          if (data.error) { document.getElementById('albumDetails').hidden = true; return; }
+          document.getElementById('albumTitle').textContent = data.title;
+          document.getElementById('albumYear').textContent = 'Year: ' + data.year;
+          const trackList = document.getElementById('trackList');
+          trackList.textContent = '';
+          let combinedLyrics = "";
+          data.tracks.forEach(track => {
+            const li = document.createElement('li');
+            const strong = document.createElement('strong');
+            strong.textContent = track.title;
+            li.appendChild(strong);
+            li.appendChild(document.createTextNode(' by ' + track.artist));
+            trackList.appendChild(li);
+            combinedLyrics += " " + track.lyrics;
+          });
+          document.getElementById('albumDetails').hidden = false;
+          const albumWords = processText(combinedLyrics);
+          albumFreq = {};
+          albumWords.forEach(w => { albumFreq[w.text] = w.size; });
+          setTimeout(() => {
+            renderWordCloud("#albumWordCloud", albumWords, renderAlbumAssociationNetwork, "#albumWordList");
+          }, 100);
+        })
+        .catch(err => {
+          console.error("Error loading album details", err);
+          document.getElementById('albumDetails').hidden = true;
+          showDataError('#albumMessage', 'This release', true);
+        });
+    });
+
+    function renderAlbumAssociationNetwork(selectedWord) {
+      getJSON('api/api.php?task=cooccurrence&word=' + encodeURIComponent(selectedWord))
+        .then(cofreq => {
+          let nodes = Object.entries(cofreq)
+            .filter(([word]) => word !== selectedWord)
+            .map(([word, count]) => ({ id: word, count }));
+          const totalFreq = albumFreq[selectedWord] || 0;
+          const maxCount = nodes.length > 0 ? Math.max(...nodes.map(n => n.count)) : 0;
+          nodes.unshift({ id: selectedWord, count: maxCount + 10, isCenter: true, freq: totalFreq });
+          const links = nodes.filter(n => !n.isCenter).map(n => ({ source: selectedWord, target: n.id, value: cofreq[n.id] || 1 }));
+          renderNetworkGraph("#albumNetwork", nodes, links);
+          renderAssocList("#albumNetworkList", selectedWord, totalFreq, nodes, renderAlbumAssociationNetwork);
+        })
+        .catch(err => { console.error("Error loading album word associations", err); showDataError('#albumNetworkList', 'Associations for “' + selectedWord + '”', false); });
+    }
+
+    // Randomizer — lazy-load tracks only when tab is first activated
+    let tracksLoaded = false;
+    function loadTracksIfNeeded() {
+      if (tracksLoaded) return;
+      tracksLoaded = true;
+      getJSON('api/getAllTracks.php')
+        .then(data => { trackData = data; })
+        .catch(err => {
+          console.error("Error loading tracks", err);
+          tracksFailed = true;
+          showDataError('#randomLyrics', 'The lyrics for the randomizer', false);
+          document.getElementById('generateRandomBtn').disabled = true;
+        });
+    }
+
+    document.getElementById('generateRandomBtn').addEventListener('click', function() {
+      const container = document.getElementById('randomLyrics');
+      if (!trackData.length) {
+        if (!tracksFailed) container.textContent = 'Track data not loaded yet — please try again in a moment.';
+        return;
+      }
+      let allLines = [];
+      trackData.forEach(track => {
+        let lines = track.lyrics.split("\n");
+        if (lines.length <= 1) lines = track.lyrics.split(".");
+        lines = lines.map(l => l.trim()).filter(l => l.length > 0);
+        allLines = allLines.concat(lines);
+      });
+      if (!allLines.length) { container.textContent = 'No lyric lines available.'; return; }
+      const numLines = Math.floor(Math.random() * 5) + 4;
+      const randomLines = [];
+      for (let i = 0; i < numLines; i++) {
+        randomLines.push(allLines[Math.floor(Math.random() * allLines.length)]);
+      }
+      container.textContent = '';
+      const p = document.createElement('p');
+      randomLines.forEach((line, i) => {
+        p.appendChild(document.createTextNode(line));
+        if (i < randomLines.length - 1) p.appendChild(document.createElement('br'));
+      });
+      container.appendChild(p);
+    });
+
+    // Escape exits fullscreen network
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        const fs = document.querySelector('.viz-container.fullscreen');
+        if (fs) fs.querySelector('.fullscreen-btn').click();
+      }
+    });
+
+    // Init dashboard
+    setTimeout(renderDashboardWordCloud, 200);
+  </script>
+</body>
+</html>

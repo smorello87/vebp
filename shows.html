@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en" data-default-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shows – VEBP</title>
+  <meta name="color-scheme" content="light dark">
+  <script>(function(d){var r=d.documentElement,t;try{t=localStorage.getItem("ebp-theme")}catch(e){}if(t!=="light"&&t!=="dark"){t=r.getAttribute("data-default-theme")==="dark"?"dark":"light"}r.setAttribute("data-theme",t);r.classList.add("ebp-js")})(document);</script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-9QR1ELFD27"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-9QR1ELFD27');
+  </script>
+  <link rel="stylesheet" href="shared/core/ebp-core.css">
+  <link rel="stylesheet" href="shared/css/style.css">
+  <style>
+    .shows-filters .ebp-form-row { margin-bottom: 0; }
+    .shows-filters .ebp-form-row > .ebp-field { flex: 1 1 13rem; }
+    .shows-filters .vebp-actions { margin: var(--ebp-s-2) 0 0; }
+
+    #eventTable { margin: 0; }
+    #eventTable caption {
+      caption-side: top;
+      margin: 0 0 var(--ebp-s-2);
+      color: var(--ebp-ink);
+    }
+    #eventTable:focus { outline: none; }
+    #eventTable:focus-visible caption { outline: 3px solid var(--ebp-focus); outline-offset: 2px; }
+    #eventTable th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background-color: var(--ebp-surface-2);
+      color: var(--ebp-ink);
+    }
+    #eventTable td { font-size: var(--ebp-text-sm); }
+    #eventTable tbody tr:hover td { background-color: var(--ebp-surface-2); }
+    #eventTable td.shows-date { font-family: var(--ebp-font-mono); font-size: var(--ebp-text-xs); white-space: nowrap; padding-top: 0.6rem; }
+    #eventTable td a { display: inline-flex; align-items: center; min-height: 1.75rem; }
+    .shows-message { text-align: center; padding: var(--ebp-s-5); color: var(--ebp-ink); }
+
+    .shows-pager {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: var(--ebp-s-3);
+      margin: var(--ebp-s-5) 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    .shows-pager li { margin: 0; }
+    .shows-pager .ebp-pagination__status { margin: 0; color: var(--ebp-ink); }
+
+    /* Narrow screens: each show becomes a card. Roles set in the markup/JS keep the
+       table semantics even though the boxes are no longer table-displayed. */
+    @media (max-width: 55.999rem) {
+      #eventTable, #eventTable tbody, #eventTable tr, #eventTable td { display: block; }
+      #eventTable thead {
+        position: absolute;
+        width: 1px; height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+      #eventTable tbody tr {
+        margin-bottom: var(--ebp-s-3);
+        padding: var(--ebp-s-3) var(--ebp-s-4);
+        background-color: var(--ebp-surface);
+        border: var(--ebp-rule) solid var(--ebp-ink);
+        border-radius: var(--ebp-radius);
+      }
+      #eventTable tbody tr:hover td { background-color: transparent; }
+      #eventTable td {
+        display: grid;
+        grid-template-columns: 7.5rem minmax(0, 1fr);
+        gap: var(--ebp-s-2);
+        padding: var(--ebp-s-1) 0;
+        border-bottom: 0;
+      }
+      #eventTable td::before {
+        content: attr(data-label);
+        font-family: var(--ebp-font-mono);
+        font-size: var(--ebp-text-xs);
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--ebp-ink-2);
+        padding-top: 0.15rem;
+      }
+      #eventTable td:empty { display: none; }
+      #eventTable td.shows-message { display: block; }
+      #eventTable td.shows-message::before { content: none; }
+    }
+  </style>
+</head>
+<body>
+  <a class="ebp-skip" href="#content">Skip to main content</a>
+  <div id="nav-placeholder" class="vebp-header-slot"><noscript>
+<header class="ebp-header">
+  <div class="ebp-header__bar">
+    <a class="ebp-brand" href="https://eastbaypunkda.com/"><img class="ebp-brand__logo" src="shared/core/img/logo.png" alt="" width="60" height="40"><span class="ebp-brand__name">East Bay Punk <span>Digital Archive</span></span></a>
+    <nav id="ebp-nav" class="ebp-nav" aria-label="Main">
+      <ul class="ebp-nav__list">
+        <li><a href="https://eastbaypunkda.com/s/east-bay-punk-digital-archive/item-set">Collections</a></li>
+        <li><a href="https://eastbaypunkda.com/s/east-bay-punk-digital-archive/item">Items</a></li>
+        <li><a href="https://eastbaypunkda.com/vebp/" aria-current="true">VEBP</a></li>
+        <li><a href="https://eastbaypunkda.com/toolkit/">Toolkit</a></li>
+        <li><a href="https://eastbaypunkda.com/s/east-bay-punk-digital-archive/page/ethics">Ethics</a></li>
+        <li><a href="https://eastbaypunkda.com/s/east-bay-punk-digital-archive/page/about">About</a></li>
+      </ul>
+    </nav>
+  </div>
+  <nav class="ebp-subnav" aria-label="Visualizing East Bay Punk">
+    <a class="ebp-subnav__title" href="index.html">Visualizing East Bay Punk</a>
+    <ul class="ebp-subnav__list">
+      <li><a href="people.html">People</a></li>
+      <li><a href="places.html">Places</a></li>
+      <li><a href="words.html">Words</a></li>
+      <li><a href="shows.html" aria-current="page">Shows</a></li>
+      <li><a href="gilman.html">Gilman</a></li>
+    </ul>
+  </nav>
+</header>
+</noscript></div>
+
+  <main id="content" tabindex="-1" class="vebp-main">
+    <div class="vebp-page-head">
+      <h1>Shows 1976&ndash;1995</h1>
+      <p>This database aggregates historical East Bay punk events from various sources. Type an artist name to filter. Use venue/city dropdowns and date range to narrow results.</p>
+    </div>
+
+    <form class="vebp-panel shows-filters" role="search" aria-label="Filter shows" id="filters-form">
+      <div class="ebp-form-row">
+        <div class="ebp-field vebp-combo">
+          <label for="artistFilter">Artist</label>
+          <input type="text" id="artistFilter" placeholder="Type to search..." autocomplete="off">
+        </div>
+        <div class="ebp-field">
+          <label for="venueFilter">Venue</label>
+          <select id="venueFilter"><option value="">All Venues</option></select>
+        </div>
+        <div class="ebp-field">
+          <label for="cityFilter">City</label>
+          <select id="cityFilter"><option value="">All Cities</option></select>
+        </div>
+      </div>
+      <div class="ebp-form-row">
+        <div class="ebp-field">
+          <label for="startDateFilter">Start Date</label>
+          <input type="date" id="startDateFilter">
+        </div>
+        <div class="ebp-field">
+          <label for="endDateFilter">End Date</label>
+          <input type="date" id="endDateFilter">
+        </div>
+      </div>
+      <div class="vebp-actions">
+        <button type="button" id="clearFilters" class="ebp-btn ebp-btn--ghost">Clear Filters</button>
+        <button type="button" id="helpButton" class="ebp-btn ebp-btn--ghost" aria-haspopup="dialog">Help</button>
+      </div>
+    </form>
+
+    <p class="vebp-status" id="results-status" role="status" aria-live="polite">Loading shows…</p>
+
+    <table id="eventTable" role="table" tabindex="-1">
+      <caption id="table-caption">Shows matching the filters, oldest first</caption>
+      <thead role="rowgroup">
+        <tr role="row">
+          <th scope="col" role="columnheader">Date</th>
+          <th scope="col" role="columnheader">Primary Artist</th>
+          <th scope="col" role="columnheader">Played With</th>
+          <th scope="col" role="columnheader">Venue</th>
+          <th scope="col" role="columnheader">Event</th>
+          <th scope="col" role="columnheader">City</th>
+          <th scope="col" role="columnheader">Flyer</th>
+          <th scope="col" role="columnheader">Recording</th>
+        </tr>
+      </thead>
+      <tbody role="rowgroup"></tbody>
+    </table>
+
+    <nav class="ebp-pagination" id="pagination" aria-label="Results pages"></nav>
+  </main>
+
+  <dialog class="help-overlay" id="helpOverlay" aria-labelledby="help-title">
+    <div class="help-content">
+      <button type="button" class="ebp-btn ebp-btn--sm help-close" data-dialog-close>Close</button>
+      <h2 id="help-title">Help</h2>
+      <p>This database aggregates historical East Bay punk events from various sources.</p>
+      <p><strong>How to search:</strong><br>
+        Type an artist name to filter. Use venue/city dropdowns and date range to narrow results.</p>
+      <p><strong>Sources:</strong><br>
+        <a href="https://www.setlist.fm">SetList.fm</a>;
+        <a href="https://digital.library.cornell.edu/catalog?f%5Barchival_collection_tesim%5D%5B%5D=Aaron+Cometbus+Punk+and+Underground+Press+Collection&search_field=all_fields">Aaron Cometbus Collection</a> at Cornell;
+        Brian Edge, <em>924 Gilman: The Story So Far</em>, 2004;
+        Dirk Dirksen, <em>Shut Up You Animals!!!</em>, 2021.
+      </p>
+    </div>
+  </dialog>
+
+  <div id="footer-placeholder" class="vebp-footer-slot"><noscript>
+<footer class="ebp-footer">
+  <p>The <strong>East Bay Punk Digital Archive</strong> is curated by <a href="https://stefanomorello.com">Stefano Morello</a>. Visualizing East Bay Punk &copy; 2025 Stefano Morello. <a href="https://github.com/smorello87/vebp">Source code on GitHub</a>.</p>
+</footer>
+</noscript></div>
+  <script src="shared/core/ebp-core.js"></script>
+  <script src="shared/js/vebp.js"></script>
+  <script src="shared/js/components.js"></script>
+  <script>
+    let events = [];
+    let displayEvents = [];
+    let artists = new Set();
+    let venues = new Set();
+    let cities = new Set();
+    let artistArray = [];
+    let currentPage = 1;
+    const rowsPerPage = 100;
+    const COLS = ['Date', 'Primary Artist', 'Played With', 'Venue', 'Event', 'City', 'Flyer', 'Recording'];
+    const statusEl = document.getElementById('results-status');
+    const captionEl = document.getElementById('table-caption');
+    const reduced = VEBP.reducedMotion();
+
+    function formatDate(dateStr) {
+      const parts = dateStr.split('-');
+      if (parts.length !== 3) return dateStr;
+      return parts[1] + '/' + parts[2] + '/' + parts[0];
+    }
+
+    function stripLeadingThe(name) {
+      return name.replace(/^the\s+/i, '').trim();
+    }
+
+    fetch("data/events.json")
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(data => {
+        events = data;
+        events.forEach(event => {
+          if (event.Artist) artists.add(event.Artist);
+          if (event.Venue) venues.add(event.Venue);
+          if (event.City) cities.add(event.City);
+        });
+        populateFilters();
+        document.getElementById('startDateFilter').value = "1976-01-01";
+        document.getElementById('endDateFilter').value = "1995-12-31";
+        applyFilters();
+      })
+      .catch(err => {
+        console.error("Error loading events:", err);
+        const tbody = document.querySelector('#eventTable tbody');
+        const tr = document.createElement('tr');
+        tr.setAttribute('role', 'row');
+        const td = document.createElement('td');
+        td.setAttribute('role', 'cell');
+        td.setAttribute('colspan', '8');
+        td.className = 'shows-message';
+        td.textContent = 'Failed to load event data.';
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        VEBP.announce(statusEl, 'Failed to load event data.');
+      });
+
+    function populateFilters() {
+      artistArray = Array.from(artists).sort((a, b) => stripLeadingThe(a).localeCompare(stripLeadingThe(b)));
+      const venueFilter = document.getElementById('venueFilter');
+      Array.from(venues).sort().forEach(v => {
+        const opt = document.createElement('option'); opt.value = v; opt.textContent = v;
+        venueFilter.appendChild(opt);
+      });
+      const cityFilter = document.getElementById('cityFilter');
+      Array.from(cities).sort().forEach(c => {
+        const opt = document.createElement('option'); opt.value = c; opt.textContent = c;
+        cityFilter.appendChild(opt);
+      });
+    }
+
+    VEBP.combobox(document.getElementById('artistFilter'), {
+      listLabel: 'Matching artists',
+      noun: 'artist',
+      source: q => { const v = q.toLowerCase(); return artistArray.filter(a => a.toLowerCase().includes(v)).slice(0, 20); },
+      onSelect: () => applyFilters()
+    });
+    let filterTimer = null;
+    document.getElementById('artistFilter').addEventListener('input', () => { clearTimeout(filterTimer); filterTimer = setTimeout(applyFilters, 150); });
+    document.getElementById('filters-form').addEventListener('submit', e => { e.preventDefault(); applyFilters(); });
+
+    function groupEvents(eventsArray) {
+      const groups = {};
+      eventsArray.forEach(event => {
+        const key = event.Date + '|' + event.Venue + '|' + event['Event Name'];
+        if (!groups[key]) {
+          groups[key] = {
+            Date: event.Date, 'Event Name': event['Event Name'], Venue: event.Venue,
+            City: event.City, 'Link to Flyer': event['Link to Flyer'] || '',
+            'Link to Recording': event['Link to Recording'] || '', Artists: new Set()
+          };
+        } else {
+          if (!groups[key]['Link to Flyer'] && event['Link to Flyer']) groups[key]['Link to Flyer'] = event['Link to Flyer'];
+          if (!groups[key]['Link to Recording'] && event['Link to Recording']) groups[key]['Link to Recording'] = event['Link to Recording'];
+        }
+        groups[key].Artists.add(event.Artist);
+      });
+      return Object.values(groups).map(g => { g.Artists = Array.from(g.Artists).sort(); return g; }).sort((a, b) => a.Date.localeCompare(b.Date));
+    }
+
+    function createCell(text, col) {
+      const td = document.createElement('td');
+      td.setAttribute('role', 'cell');
+      td.dataset.label = COLS[col];
+      td.textContent = text;
+      return td;
+    }
+
+    function createLinkCell(url, label, col, context) {
+      const td = document.createElement('td');
+      td.setAttribute('role', 'cell');
+      td.dataset.label = COLS[col];
+      if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.textContent = label;
+        const extra = document.createElement('span');
+        extra.className = 'ebp-vh';
+        extra.textContent = ' ' + context + ' (opens in a new tab)';
+        a.appendChild(extra);
+        td.appendChild(a);
+      }
+      return td;
+    }
+
+    function populateTable(pageData) {
+      const tbody = document.querySelector('#eventTable tbody');
+      tbody.textContent = '';
+      const fragment = document.createDocumentFragment();
+      const selectedArtist = document.getElementById('artistFilter').value;
+      pageData.forEach(group => {
+        let primary = '', playedWith = '';
+        if (selectedArtist && group.Artists.some(a => a.toLowerCase() === selectedArtist.toLowerCase())) {
+          primary = group.Artists.find(a => a.toLowerCase() === selectedArtist.toLowerCase()) || selectedArtist;
+          playedWith = group.Artists.filter(a => a.toLowerCase() !== selectedArtist.toLowerCase()).join(", ");
+        } else {
+          primary = group.Artists[0];
+          playedWith = group.Artists.slice(1).join(", ");
+        }
+        const when = formatDate(group.Date) + ', ' + (group.Venue || '');
+        const row = document.createElement('tr');
+        row.setAttribute('role', 'row');
+        const dateCell = createCell(formatDate(group.Date), 0);
+        dateCell.className = 'shows-date';
+        row.appendChild(dateCell);
+        row.appendChild(createCell(primary, 1));
+        row.appendChild(createCell(playedWith, 2));
+        row.appendChild(createCell(group.Venue, 3));
+        row.appendChild(createCell(group['Event Name'], 4));
+        row.appendChild(createCell(group.City, 5));
+        row.appendChild(createLinkCell(group['Link to Flyer'], 'View', 6, 'flyer, ' + when));
+        row.appendChild(createLinkCell(group['Link to Recording'], 'Listen', 7, 'to recording, ' + when));
+        fragment.appendChild(row);
+      });
+      tbody.appendChild(fragment);
+    }
+
+    function renderPagination() {
+      const nav = document.getElementById('pagination');
+      nav.textContent = '';
+      const totalPages = Math.ceil(displayEvents.length / rowsPerPage);
+      if (totalPages <= 1) { nav.hidden = true; return; }
+      nav.hidden = false;
+      const ul = document.createElement('ul');
+      ul.className = 'shows-pager';
+      const li = el => { const x = document.createElement('li'); x.appendChild(el); ul.appendChild(x); };
+      const prev = document.createElement('button'); prev.type = 'button'; prev.textContent = "Previous page"; prev.className = "ebp-btn";
+      prev.disabled = currentPage === 1;
+      prev.addEventListener('click', () => { if (currentPage > 1) { currentPage--; updateTable(true); } });
+      li(prev);
+      const span = document.createElement('span');
+      span.className = 'ebp-pagination__status';
+      span.textContent = 'Page ' + currentPage + ' of ' + totalPages;
+      li(span);
+      const next = document.createElement('button'); next.type = 'button'; next.textContent = "Next page"; next.className = "ebp-btn";
+      next.disabled = currentPage === totalPages;
+      next.addEventListener('click', () => { if (currentPage < totalPages) { currentPage++; updateTable(true); } });
+      li(next);
+      nav.appendChild(ul);
+    }
+
+    function describe() {
+      const total = displayEvents.length;
+      if (!total) return 'No shows match these filters.';
+      const start = (currentPage - 1) * rowsPerPage + 1;
+      const end = Math.min(total, currentPage * rowsPerPage);
+      return total.toLocaleString('en-US') + (total === 1 ? ' show matches' : ' shows match') + '. Showing ' + start + '–' + end + '.';
+    }
+
+    function updateTable(fromPager) {
+      const start = (currentPage - 1) * rowsPerPage;
+      populateTable(displayEvents.slice(start, start + rowsPerPage));
+      renderPagination();
+      const totalPages = Math.max(1, Math.ceil(displayEvents.length / rowsPerPage));
+      captionEl.textContent = 'Shows matching the filters, oldest first — page ' + currentPage + ' of ' + totalPages;
+      VEBP.announce(statusEl, describe());
+      if (fromPager) {
+        const table = document.getElementById('eventTable');
+        table.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+        table.focus({ preventScroll: true });
+      }
+    }
+
+    function applyFilters() {
+      const startDate = document.getElementById('startDateFilter').value || null;
+      const endDate = document.getElementById('endDateFilter').value || null;
+      const artistFilter = document.getElementById('artistFilter').value;
+      const venueFilter = document.getElementById('venueFilter').value;
+      const cityFilter = document.getElementById('cityFilter').value;
+      const filtered = events.filter(e => {
+        return (!startDate || e.Date >= startDate) && (!endDate || e.Date <= endDate) &&
+          (!venueFilter || e.Venue === venueFilter) && (!cityFilter || e.City === cityFilter);
+      });
+      let grouped = groupEvents(filtered);
+      if (artistFilter) {
+        const lower = artistFilter.toLowerCase();
+        grouped = grouped.filter(g => g.Artists.some(a => a.toLowerCase().includes(lower)));
+      }
+      displayEvents = grouped;
+      currentPage = 1;
+      updateTable(false);
+    }
+
+    document.getElementById('startDateFilter').addEventListener('input', applyFilters);
+    document.getElementById('endDateFilter').addEventListener('input', applyFilters);
+    document.getElementById('venueFilter').addEventListener('change', applyFilters);
+    document.getElementById('cityFilter').addEventListener('change', applyFilters);
+    document.getElementById('clearFilters').addEventListener('click', () => {
+      document.getElementById('startDateFilter').value = "";
+      document.getElementById('endDateFilter').value = "";
+      document.getElementById('artistFilter').value = "";
+      document.getElementById('venueFilter').value = "";
+      document.getElementById('cityFilter').value = "";
+      applyFilters();
+    });
+
+    const helpOverlay = VEBP.dialog(document.getElementById('helpOverlay'));
+    document.getElementById('helpButton').addEventListener('click', e => VEBP.openDialog(helpOverlay, e.currentTarget));
+  </script>
+</body>
+</html>
